@@ -23,7 +23,7 @@ jobs:
 
       # ステップ2: UATコマンドでゲームをパッケージ化する
       - name: Build and Package
-        shell: pwsh # PowerShellで実行
+        shell: powershell # PowerShellで実行
         run: |
           Write-Host "Starting UE5 Build..."
 
