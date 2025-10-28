@@ -2,8 +2,10 @@ name: Build UE5 Project
 
 on:
   # (1) mainブランチにpushされた時に実行する
-  push:
-    branches: ["main"]
+  #どういうときにGitHubからダウンロードしてくるかトリガーのようなもの？
+  # push:
+  #  branches: ["main"]
+  #上記はpush時にCI働く。これがないとGitHubActionsから手動で行う。
 
   # (2) GitHubの画面から手動で実行できるようにする
   #セルフホストランナーは "C:\actions-runner\_work" で動く
