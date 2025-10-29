@@ -17,12 +17,20 @@ jobs:
     runs-on: self-hosted
 
     steps:
-      # ステップ1: コードをダウンロードする (LFSファイルも含む)
-      - name: Checkout repository #リポジトリ名のフォルダをセルフホストランナーが作業用フォルダに作成
-        uses: actions/checkout@v4 #GitHubからpushしたすべてをダウンロード
+      # ステップ1a: コード本体だけをチェックアウト (LFSはまだ)
+      - name: Checkout repository (code only)
+        uses: actions/checkout@v4
         with:
-          lfs: true
-          token: ${{ secrets.MY_PAT }}
+          # lfs: true  <-- ★ lfs: true を削除 ★
+          token: ${{ secrets.MY_PAT }} # PATはここでも使う
+
+      # ステップ1b: LFSファイルを明示的にダウンロード ★ここを追加★
+      - name: Pull LFS files
+        shell: bash # Git Bashを使うように指定
+        run: git lfs pull
+        env:
+          # git lfs pull コマンドに PAT を渡す (認証のため)
+          GITHUB_TOKEN: ${{ secrets.MY_PAT }}
 
       # ステップ2: UATコマンドでゲームをパッケージ化する
       - name: Build and Package
