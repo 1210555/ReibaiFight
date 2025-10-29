@@ -22,6 +22,7 @@ jobs:
         uses: actions/checkout@v4 #GitHubからpushしたすべてをダウンロード
         with:
           lfs: true
+          token: ${{ secrets.MY_PAT }}
 
       # ステップ2: UATコマンドでゲームをパッケージ化する
       - name: Build and Package
