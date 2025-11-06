@@ -18,7 +18,8 @@ void UAutoSlashAttack::PerformAttack()
 	AActor* TargetEnemy = UReibaiFightBFL::GetNearestEnemy(
 		GetWorld(),//
 		OwnerCharacter->GetActorLocation(),//探す原点（プレイヤーの座標）
-		3000.0f//探す半径
+		3000.0f,//探す半径
+		OwnerCharacter
 	);
 
 	// 2. 敵が見つかった場合
@@ -60,12 +61,19 @@ void UAutoSlashAttack::PerformAttack()
 	}
 }
 
-void UAutoSlashAttack::Upgrade(float ModificationValue)
+void UAutoSlashAttack::Upgrade(const FUpgradeData& UpgradeData)
 {
 	// 以前の自分を呼び出す
-	Super::Upgrade(ModificationValue);
+	Super::Upgrade(UpgradeData);
 
 	// このコンポーネントが持つDamage変数を増やすなど、具体的な強化処理をここに書く
-	BaseDamage += ModificationValue;
+	BaseDamage += UpgradeData.ModificationAttackAmount;
 	UE_LOG(LogTemp, Warning, TEXT("AutoSlash Attack Upgraded! New Damage: %f"), BaseDamage);
+
+	//攻撃速度を強化する
+	AttackRate -= UpgradeData.ModificationFrequentValue;
+	if (AttackRate < 0.5f) //最低限のクールダウン
+	{
+		AttackRate = 0.5f;
+	}
 }

@@ -26,7 +26,7 @@ jobs:
 
       # ステップ1b: LFSファイルを明示的にダウンロード ★ここを追加★
       - name: Pull LFS files
-        shell: cmd # Git Bashを使うように指定
+        shell: cmd # cmdを使うように指定
         run: git lfs pull
         env:
           # git lfs pull コマンドに PAT を渡す (認証のため)

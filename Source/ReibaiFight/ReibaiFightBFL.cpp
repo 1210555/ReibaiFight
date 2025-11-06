@@ -4,7 +4,9 @@
 #include "ReibaiFightBFL.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetSystemLibrary.h"
-#include "EnemySpirit.h" // 敵クラスのヘッダー
+#include "ReibaiFightCharacter.h"
+#include "EnemySpirit.h"
+#include "BaseCharacter.h"
 
 //ダメージを与える関数、引数は
 //(攻撃者、攻撃の中心位置、攻撃のサイズ（半径）、与えるダメージ)
@@ -62,10 +64,10 @@ void UReibaiFightBFL::ApplyRadialDamage(AActor* Attacker, FVector Origin, float 
 	}
 }
 
-AEnemySpirit* UReibaiFightBFL::GetNearestEnemy(const UObject* WorldContextObject, FVector Origin, float Radius)
+ABaseCharacter* UReibaiFightBFL::GetNearestEnemy(const UObject* WorldContextObject, FVector Origin, float Radius, AActor* ActorToIgnore)
 {
-	TArray<AActor*> FoundActors;
-	UGameplayStatics::GetAllActorsOfClass(WorldContextObject, AEnemySpirit::StaticClass(), FoundActors);
+	/*TArray<AActor*> FoundActors;
+	UGameplayStatics::GetAllActorsOfClass(WorldContextObject, ABaseCharacter::StaticClass(), FoundActors);
 
 	AActor* NearestActor = nullptr;
 	float MinDistance = Radius;
@@ -80,5 +82,35 @@ AEnemySpirit* UReibaiFightBFL::GetNearestEnemy(const UObject* WorldContextObject
 		}
 	}
 
-	return Cast<AEnemySpirit>(NearestActor);
+	return Cast<AEnemySpirit>(NearestActor);*/
+
+	if (!WorldContextObject) return nullptr;
+
+	TArray<AActor*> FoundActors;
+	UGameplayStatics::GetAllActorsOfClass(WorldContextObject, ABaseCharacter::StaticClass(), FoundActors); // ← ABaseCharacterを探す
+
+	AActor* NearestActor = nullptr;
+	float MinDistanceSquared = Radius * Radius;
+
+	for (AActor* Actor : FoundActors)
+	{
+		// 自分自身は無視する
+		if (Actor == ActorToIgnore)
+		{
+			continue;
+		}
+
+		ABaseCharacter* BaseChar = Cast<ABaseCharacter>(Actor);
+		if (BaseChar && BaseChar->GetCurrentHealth() > 0) // 生きているキャラクターのみを対象
+		{
+			float DistanceSquared = FVector::DistSquared(Origin, Actor->GetActorLocation());
+			if (DistanceSquared < MinDistanceSquared)
+			{
+				MinDistanceSquared = DistanceSquared;
+				NearestActor = Actor;
+			}
+		}
+	}
+	return Cast<ABaseCharacter>(NearestActor);
+
 }

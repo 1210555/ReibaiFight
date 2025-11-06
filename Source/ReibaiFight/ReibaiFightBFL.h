@@ -6,12 +6,8 @@
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "Engine/DataTable.h"// データテーブルを使う場合に必要
 #include "Containers/Set.h"
+#include "BaseCharacter.h"
 #include "ReibaiFightBFL.generated.h"
-
-/**
- * 
- */
-class AEnemySpirit;
 
 UCLASS()
 class REIBAIFIGHT_API UReibaiFightBFL : public UBlueprintFunctionLibrary
@@ -29,9 +25,10 @@ public:
 	);
 
 	UFUNCTION(BlueprintCallable, Category = "Combat")
-	static AEnemySpirit* GetNearestEnemy(
+	static ABaseCharacter* GetNearestEnemy(
 		const UObject* WorldContextObject, 
 		FVector Origin, 
-		float Radius
+		float Radius,
+		AActor* ActorToIgnore //無視するアクタ（自分自身）
 	);
 };

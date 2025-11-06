@@ -27,15 +27,19 @@ protected:
 	float defaultSlashDamage = 60.0f;
 
 private:
-	// Å‚à‹ß‚¢“G‚ğ’T‚·ƒwƒ‹ƒp[ŠÖ”
-	AActor* FindNearestEnemy();
+	//// Å‚à‹ß‚¢“G‚ğ’T‚·ƒwƒ‹ƒp[ŠÖ”
+	//AActor* FindNearestEnemy();
 
 protected:
 	// ‚±‚ÌUŒ‚‚ª—^‚¦‚éŠî–{ƒ_ƒ[ƒW
 	UPROPERTY(EditAnywhere, Category = "Combat")
 	float BaseDamage = 25.0f;
 
+	//©“®UŒ‚‚Ì”­“®ŠÔŠu
+	UPROPERTY(EditAnywhere, Category = "Combat")
+	float AttackRate = 3.0f;
+
 public:
 	// eƒNƒ‰ƒX‚ÌUpgradeŠÖ”‚ğã‘‚«
-	virtual void Upgrade(float ModificationValue) override;
+	virtual void Upgrade(const FUpgradeData& UpgradeData) override;
 };

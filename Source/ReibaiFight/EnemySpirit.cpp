@@ -18,6 +18,9 @@ AEnemySpirit::AEnemySpirit()
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
     AttackEnemyDamage = 12.0f;
+	CurrentHealth = MaxHealth;
+    //カプセルコンポーネントがオーバーラップしたら'OnOverlapBegin'関数を呼び出す
+    GetCapsuleComponent()->OnComponentBeginOverlap.AddDynamic(this, &AEnemySpirit::OnOverlapBegin);
 }
 
 // Called when the game starts or when spawned
@@ -44,23 +47,23 @@ void AEnemySpirit::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 float AEnemySpirit::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
     UE_LOG(LogTemp, Error, TEXT("ENEMY TakeDamage called!"))
+
     float DamageApplied = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 
-    // CurrentHealthは事前にEnemySpiritクラスで定義しておく
-    CurrentHealth -= DamageApplied;
+    //ダメージを食らった時の処理
+    if (DamageApplied > 0.f) {
 
-    if (CurrentHealth <= 0.0f)
-    {
-        // 「霊を払う」演出
-        // ここにパーティクルエフェクトやサウンドを再生する処理を入れる
-
-        //アクターをワールドから消滅させる
-		// 死亡時のアニメーション再生
-        Die();
-    }
-    else {
-        // ダメージを受けた際のリアクション（例: フラッシュエフェクトやサウンド）
-		// ここにリアクションの処理を入れる
+		//体力が０以下になったら死亡処理を呼び出す
+        if (CurrentHealth <= 0.0f)
+        {
+            //アクターをワールドから消滅させる
+            // 死亡時のアニメーション再生
+            Die();
+        }
+        //else {
+        //    // ダメージを受けた際のリアクション（例: フラッシュエフェクトやサウンド）
+        //    // ここにリアクションの処理を入れる
+        //}
     }
 
     return DamageApplied;
@@ -138,7 +141,7 @@ void AEnemySpirit::Attack()
 void AEnemySpirit::AttackHitCheck(float DamageAmount)
 {
     UE_LOG(LogTemp, Log, TEXT("Enemy AttackHitCheck CALLED !"));
-
+	
     // --- 敵自身の攻撃の中心位置と半径を計算 ---
     const FVector HitOrigin = GetActorLocation() + GetActorForwardVector() * 100.0f; // 例: 自分の前方100ユニット
     const float HitRadius = 100.0f; // 例: 敵の攻撃半径
@@ -148,7 +151,26 @@ void AEnemySpirit::AttackHitCheck(float DamageAmount)
         HitOrigin,
         HitRadius,
         AttackEnemyDamage,
-        HitActorsDuringAttack // <- 渡す！
+        HitActorsDuringAttack //多段ヒット防止の配列
     );
-    DrawDebugSphere(GetWorld(), HitOrigin, HitRadius, 12, FColor::Orange, false, 2.0f);
+    //DrawDebugSphere(GetWorld(), HitOrigin, HitRadius, 12, FColor::Orange, false, 2.0f);
+}
+
+void AEnemySpirit::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+    // 重なった相手がプレイヤーか？ (かつ、自分自身ではないか？)
+    AReibaiFightCharacter* PlayerCharacter = Cast<AReibaiFightCharacter>(OtherActor);
+    if (PlayerCharacter && OtherActor != this)
+    {
+        // プレイヤーなら、自分（敵）の攻撃力でダメージを与える
+        UGameplayStatics::ApplyDamage(
+            PlayerCharacter,
+            AttackEnemyDamage, // 敵が持つ攻撃力変数
+            GetController(),
+            this,
+            UDamageType::StaticClass()
+        );
+
+        // TODO: 多段ヒットを防ぐため、一度ダメージを与えたらタイマーで少しの間、再攻撃しないようにする
+    }
 }

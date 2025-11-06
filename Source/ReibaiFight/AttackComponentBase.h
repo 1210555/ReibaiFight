@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "MyDataTypes.h"
 #include "AttackComponentBase.generated.h"
 
 UCLASS(Blueprintable, ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
@@ -27,5 +28,5 @@ public:
 	// void PerformAttack_Blueprint();
 
 	//子クラスでアップグレードを実装
-	virtual void Upgrade(float ModificationValue);
+	virtual void Upgrade(const FUpgradeData& UpgradeData);
 };

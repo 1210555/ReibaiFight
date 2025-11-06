@@ -22,7 +22,7 @@ void UAttackComponentBase::PerformAttack()
 }
 
 //このクラスを継承したクラス（つまり攻撃系の子クラス）で内容を実装
-void UAttackComponentBase::Upgrade(float ModificationValue)
+void UAttackComponentBase::Upgrade(const FUpgradeData& UpgradeData)
 {
 	// 基本クラスでは何もしない。子クラスがこの中身を実装する。
 }

@@ -68,6 +68,11 @@ public:
 
     // ‹­‰»‚·‚é—Ê
     UPROPERTY(EditAnywhere, BlueprintReadOnly)
-    float ModificationValue;
+    float ModificationAttackAmount;
 
+    UPROPERTY(EditAnywhere, BlueprintReadOnly)
+    float ModificationFrequentValue;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly)
+    float ModificationValue;
 };

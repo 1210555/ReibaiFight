@@ -7,6 +7,7 @@
 #include "Logging/LogMacros.h"
 #include "AttackComponentBase.h"
 #include "MyDataTypes.h"
+#include "BaseCharacter.h" 
 #include "ReibaiFightCharacter.generated.h"
 
 class USpringArmComponent;
@@ -18,7 +19,7 @@ struct FInputActionValue;
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
 
 UCLASS(config=Game)
-class AReibaiFightCharacter : public ACharacter
+class AReibaiFightCharacter : public ABaseCharacter
 {
 	GENERATED_BODY()
 
@@ -57,12 +58,6 @@ public:
 	AReibaiFightCharacter();
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
-	float MaxHealth = 100.0f;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stats")
-	float CurrentHealth;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
 	float MaxSpiritPower = 100.0f;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stats")
@@ -70,15 +65,10 @@ public:
 
 	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
 
-	//どのWBP＿HUDを使うかを指定するための変数
-	//レベル上に配置したキャラクターインスタンスごと、もしくはBPのデフォルト設定でも編集できるように
-	UPROPERTY(EditAnywhere, Category = "UI")
-	TSubclassOf<UUserWidget> HUDWidgetClass;
-
-	//HUDウィジェットのインスタンスを保持するための変数
-	//ガベージコレクションに引っかからないようにするためにUPROPERTYをつける
-	UPROPERTY()
-	TObjectPtr<UUserWidget> HUDWidgetInstance;
+	//体力が更新された時にブループリント側で呼び出されるイベント
+	//これによりイベント駆動型への移行
+	UFUNCTION(BlueprintImplementableEvent, Category = "Health")
+	void OnHealthUpdated(float Current, float Max); // ← これを追加
 
 protected:
 	//ただのvoid関数はUEエディタ内で使用できない、内部の計算などを行うときはただのvoidにする。
@@ -112,19 +102,24 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
 	bool bHasAutoAttack = false;
 
-	// 現在装備している攻撃コンポーネント
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
-	UAttackComponentBase* CurrentAttackComponent;
+	TArray<TObjectPtr<UAttackComponentBase>> ActiveAttackComponents;
 
 	// 自動攻撃のタイマーハンドル
 	FTimerHandle AutoAttackTimerHandle;
 
-	/** 自動攻撃を開始する関数（ブループリントから呼び出すためのもの） */
-	UFUNCTION(BlueprintCallable, Category = "Combat")
-	void EnableAutoAttack();
+	// EnableAutoAttack() の代わりに、タイマーを開始する専用の関数を用意
+	void StartAutoAttackTimer();
 
 	/** タイマーによって定期的に呼び出される関数 */
 	void TriggerAutoAttack();
+
+	//ゲームオーバーに表示するUIのブループリントクラス
+	UPROPERTY(EditAnywhere, Category="UI")
+	TSubclassOf<UUserWidget> GameOverWidgetClass;
+
+	//プレイヤーの死亡処理(ゲームオーバー時のUI表示)
+	virtual void Die() override;
 
 protected:
 	// APawn interface
@@ -164,11 +159,7 @@ protected:
 	UPROPERTY()
 	TObjectPtr<UUserWidget> LevelUpWidgetInstance;
 
-	// ブループリントから呼び出すための関数
-	UFUNCTION(BlueprintCallable, Category = "LevelUp")
-	void ApplyUpgrade(FName UpgradeID);
 
-	// 
 	UPROPERTY(EditAnywhere, Category = "UI")
 	TSubclassOf<UUserWidget> LevelUpWidgetClass;
 

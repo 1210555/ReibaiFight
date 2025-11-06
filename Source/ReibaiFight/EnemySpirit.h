@@ -4,11 +4,11 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
-#include "ReibaiFightCharacter.h" //親クラスのインクルード
+#include "BaseCharacter.h" //親クラスのインクルード
 #include "EnemySpirit.generated.h"
 
 UCLASS()
-class REIBAIFIGHT_API AEnemySpirit : public AReibaiFightCharacter
+class REIBAIFIGHT_API AEnemySpirit : public ABaseCharacter
 {
 	GENERATED_BODY()
 
@@ -26,7 +26,7 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Combat")
 	UAnimMontage* DeathMontage;
 
-	void Die();
+	virtual void Die() override;
 
 	// 死亡時にドロップする経験値アイテムのブループリント
 	UPROPERTY(EditAnywhere, Category = "Loot")
@@ -43,7 +43,11 @@ protected:
 	UFUNCTION(BlueprintCallable, Category = "Combat",meta=(ToolTip="Enemy Attack animaiton and Logic!!!!!!!!"))
 	void Attack();
 
-	virtual void AttackHitCheck(float DamageAmount) override;
+	UFUNCTION(BlueprintCallable, Category = "Combat")
+	virtual void AttackHitCheck(float DamageAmount);
+
+	UFUNCTION() // Overlapイベントを受け取るためにUFUNCTIONが必要
+	void OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
 public:	
 	// Called every frame

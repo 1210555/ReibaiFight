@@ -13,7 +13,6 @@
 #include "InputActionValue.h"
 #include "Kismet/GameplayStatics.h"//ApplyDamageに必要
 #include "Kismet/KismetMathLibrary.h"
-#include "EnemySpirit.h"
 #include "Animation/AnimInstance.h"      // AnimInstanceを使う場合に必要
 #include "DrawDebugHelpers.h"            // デバッグ表示に必要
 #include "Blueprint/UserWidget.h" // UUserWidgetを使う場合に必要
@@ -81,22 +80,22 @@ void AReibaiFightCharacter::BeginPlay()
 			Subsystem->AddMappingContext(DefaultMappingContext, 0);
 		}
 	}
+	//体力バーの初期化（最初はcurrentとmaxどちらも100）
+	OnHealthUpdated(CurrentHealth, MaxHealth);
 }
 
-//////////////////////////////////////////////////////////////////////////
-// Input
 //キャラクターがプレイヤーに操作され始める最初の一回だけ呼ばれる
 //初期設定用の関数
 void AReibaiFightCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	// Add Input Mapping Context
-	if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
-	{
-		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
-		{
-			Subsystem->AddMappingContext(DefaultMappingContext, 0);
-		}
-	}
+	//if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
+	//{
+	//	if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
+	//	{
+	//		Subsystem->AddMappingContext(DefaultMappingContext, 0);
+	//	}
+	//}
 	
 	// Set up action bindings
 	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent)) {
@@ -209,12 +208,12 @@ void AReibaiFightCharacter::AttackHitCheck(float DamageAmount)
 {
 	UE_LOG(LogTemp, Warning, TEXT("Player AttackHitCheck CALLED via BFL!"));
 
-	// --- 当たり判定の中心位置を計算 ---
-	// 拳のソケット位置を取得 (ソケット名 "Fist_R_Socket" は要確認)
+	//--- 当たり判定の中心位置を計算 ---
+	//拳のソケット位置を取得 (ソケット名 "Fist_R_Socket")
 	const FVector HitOrigin = GetMesh()->GetSocketLocation("Fist_R_Socket");
 	const float HitRadius = 80.0f; // この攻撃の半径
 
-	// --- BFLの関数を呼び出してダメージ適用 ---
+	// --- BFLの関数を呼び出す ---
 	// HitActors は .h で定義した TSet<AActor*> 型のメンバー変数
 	UReibaiFightBFL::ApplyRadialDamage(
 		this,        // 攻撃者は自分自身
@@ -225,95 +224,95 @@ void AReibaiFightCharacter::AttackHitCheck(float DamageAmount)
 	);
 
 	// デバッグ用に当たり判定の球を視覚化
-	DrawDebugSphere(GetWorld(), HitOrigin, HitRadius, 12, FColor::Red, false, 2.0f);
+	//DrawDebugSphere(GetWorld(), HitOrigin, HitRadius, 12, FColor::Red, false, 2.0f);
 }
 
 float AReibaiFightCharacter::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
-	UE_LOG(LogTemp, Warning, TEXT("Player TakeDamage Started! DamageAmount: %f"), DamageAmount);
-	// まず親クラスのTakeDamageを呼び出して、最終的なダメージ量を計算してもらう (重要！)
+
+	//まず親クラスのTakeDamageを呼び出して、最終的なダメージ量を計算してもらう (重要！)
 	float DamageApplied = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+	
 
-	// 体力が残っていればダメージを適用
-	if (CurrentHealth > 0.0f)
-	{
-		CurrentHealth -= DamageApplied;
-		UE_LOG(LogTemp, Warning, TEXT("Player took %f damage. Current Health: %f"), DamageApplied, CurrentHealth);
+	UE_LOG(LogTemp, Error, TEXT("[C++] %s took %f damage. Current Health: %f"), *GetName(), DamageApplied, CurrentHealth);
 
-		if (HUDWidgetInstance) // HUDウィジェットへの参照が存在するかチェック
-		{
-			// 1. 呼び出すイベント名を指定
-			FName FuncName = FName("UpdateHealthBar");
 
-			// 2. ウィジェットからその名前の関数(イベント)を探す
-			UFunction* Function = HUDWidgetInstance->FindFunction(FuncName);
+	if (DamageApplied > 0.f) {
 
-			// 3. 関数が見つかったら
-			if (Function)
-			{
-				// 4. イベントに渡す引数を準備するための構造体
-				struct { float Current; float Max; } Params;
-				Params.Current = CurrentHealth; // 現在の体力をセット
-				Params.Max = MaxHealth;       // 最大体力もセット
-
-				// 5. イベントを実行し、引数を渡す
-				HUDWidgetInstance->ProcessEvent(Function, &Params);
-			}
-		}
+		OnHealthUpdated(CurrentHealth, MaxHealth);
 
 		// 体力がゼロ以下になったかチェック
 		if (CurrentHealth <= 0.0f)
 		{
-			// TODO: プレイヤーの死亡処理 (例: ゲームオーバー画面表示、リスタートなど)
+			//プレイヤーの死亡処理 (例: ゲームオーバー画面表示、リスタートなど)をいれる
 			UE_LOG(LogTemp, Error, TEXT("PLAYER DIED!"));
-			// DisableInput(GetController<APlayerController>()); // 操作不能にするなど
+			Die();
+			// 操作不能にするなど
 		}
 		else
 		{
-			// TODO: プレイヤーの被ダメージリアクション (画面の点滅、サウンド再生など)
+			//プレイヤーの被ダメージリアクション (画面の点滅、サウンド再生など)をいれる
 		}
 	}
-
 	return DamageApplied; // 実際に適用されたダメージ量を返す
 }
 
-//ブルプリから呼び出す（自動攻撃開始の合図）
-void AReibaiFightCharacter::EnableAutoAttack()
+void AReibaiFightCharacter::Die()
 {
-	// すでに自動攻撃が有効な場合は何もしない
-	if (bHasAutoAttack) return;
 
-	bHasAutoAttack = true;
+	APlayerController* PlayerController = GetController<APlayerController>();
 
-	// 自分に追加されている攻撃コンポーネントを探し出す
-	CurrentAttackComponent = FindComponentByClass<UAttackComponentBase>();
-
-	if (CurrentAttackComponent)
+	// 1. UIが存在するかチェック
+	if (GameOverWidgetClass && PlayerController)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Auto Attack Enabled!"));
+		// 2. ゲームを一時停止し、マウスカーソルを表示
+		PlayerController->SetPause(true);
+		PlayerController->bShowMouseCursor = true;
+		PlayerController->SetInputMode(FInputModeUIOnly()); // マウス操作をUIのみに限定
 
-		// タイマーを開始する
-		GetWorld()->GetTimerManager().SetTimer(
-			AutoAttackTimerHandle,
-			this,
-			&AReibaiFightCharacter::TriggerAutoAttack,
-			2.0f, // 2秒ごとに実行
-			true  // 繰り返し
-		);
+		// 3. UIを作成して画面に追加
+		UUserWidget* GameOverWidget = CreateWidget<UUserWidget>(GetWorld(), GameOverWidgetClass);
+		if (GameOverWidget)
+		{
+			GameOverWidget->AddToViewport();
+		}
 	}
-	else
+
+	// 4. キャラクターの当たり判定と動きを停止
+	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	GetCharacterMovement()->DisableMovement();
+	DisableInput(PlayerController); // プレイヤーの入力を無効化
+}
+
+void AReibaiFightCharacter::StartAutoAttackTimer()
+{
+	// 既にタイマーが動いている場合は何もしない
+	if (GetWorld()->GetTimerManager().IsTimerActive(AutoAttackTimerHandle))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("EnableAutoAttack failed: No Attack Component found!"));
+		return;
 	}
+
+	UE_LOG(LogTemp, Warning, TEXT("Auto Attack Timer Started!"));
+	GetWorld()->GetTimerManager().SetTimer(
+		AutoAttackTimerHandle,
+		this,
+		&AReibaiFightCharacter::TriggerAutoAttack,
+		2.0f, // 2秒ごとに実行 (この間隔は後で調整可能)
+		true  // 繰り返し
+	);
 }
 
 //タイマーで定期的に行われる処理
 void AReibaiFightCharacter::TriggerAutoAttack()
 {
-	if (CurrentAttackComponent)
+	UE_LOG(LogTemp, Log, TEXT("Triggering All Auto Attacks..."));
+	// 所持している全ての自動攻撃コンポーネントの攻撃を実行
+	for (UAttackComponentBase* AttackComp : ActiveAttackComponents)
 	{
-		// 装備している攻撃コンポーネントに攻撃を実行させる
-		CurrentAttackComponent->PerformAttack();
+		if (AttackComp)
+		{
+			AttackComp->PerformAttack();
+		}
 	}
 }
 
@@ -352,25 +351,47 @@ void AReibaiFightCharacter::LevelUp()
 		//データテーブルから全ての行の名前を取得
 		TArray<FName> AllUpgradeIDs = UpgradesDataTable->GetRowNames();
 
-		// TODO: ここに「取得済みではない」「前提条件を満たしている」などのフィルタリング処理を追加する
+		// 1. 抽選対象の「候補」を入れるための、空のリストを新しく用意
+		TArray<FName> AvailableUpgradeIDs;
+
+		// 2. データテーブルの全てのアップグレードを1つずつチェック
+		for (const FName& UpgradeID : AllUpgradeIDs)
+		{
+			// データテーブルからアップグレードの情報を取得
+			FUpgradeData* Row = UpgradesDataTable->FindRow<FUpgradeData>(UpgradeID, TEXT(""));
+			if (!Row) continue; // データが見つからなければスキップ
+
+			// --- 条件A: まだ取得していないアップグレードか？ ---
+			bool bAlreadyAcquired = AcquiredUpgradeIDs.Contains(UpgradeID);
+
+			// --- 条件B: 前提条件を満たしているか？ ---
+			//    「前提条件が設定されていない(None)」または「前提条件IDを既に取得済み」
+			bool bPrerequisiteMet = Row->PrerequisiteID.IsNone() || AcquiredUpgradeIDs.Contains(Row->PrerequisiteID);
+
+			// 3. 両方の条件を満たした場合のみ、抽選「候補」リストに追加
+			if (!bAlreadyAcquired && bPrerequisiteMet)
+			{
+				AvailableUpgradeIDs.Add(UpgradeID);
+			}
+		}
 
 		// リストをシャッフル
 		// 配列をシャッフルしてランダムな順番にする
-		const int32 Num = AllUpgradeIDs.Num();
+		const int32 Num = AvailableUpgradeIDs.Num();
 		for (int32 i = 0; i < Num; ++i)
 		{
 			int32 j = FMath::RandRange(i, Num - 1);
 			if (i != j)
 			{
-				AllUpgradeIDs.Swap(i, j);
+				AvailableUpgradeIDs.Swap(i, j);
 			}
 		}
 
 		// シャッフルしたリストの先頭から3つをOfferedUpgradeIDsに追加
-		int32 NumToOffer = FMath::Min(3, AllUpgradeIDs.Num());
+		int32 NumToOffer = FMath::Min(3, AvailableUpgradeIDs.Num());
 		for (int32 i = 0; i < NumToOffer; ++i)
 		{
-			OfferedUpgradeIDs.Add(AllUpgradeIDs[i]);
+			OfferedUpgradeIDs.Add(AvailableUpgradeIDs[i]);
 		}
 	}
 
@@ -378,49 +399,14 @@ void AReibaiFightCharacter::LevelUp()
 	OnLevelUp();
 }
 
-void AReibaiFightCharacter::ApplyUpgrade(FName UpgradeID)
-{
-	/*UE_LOG(LogTemp, Warning, TEXT("Upgrade Selected: %s"), *UpgradeID.ToString());
-
-	// TODO: UpgradeIDに応じて、実際に能力を適用する処理をここに書く
-	// (例: 新しい攻撃コンポーネントを追加する、ステータスを上げるなど)
-
-	// --- ゲームに戻る処理 ---
-
-	// 1. ゲームの一時停止を解除
-	APlayerController* PlayerController = GetController<APlayerController>();
-	if (PlayerController)
-	{
-		PlayerController->SetPause(false);
-		PlayerController->bShowMouseCursor = false;
-		// ...
-	}
-
-	// 2. レベルアップUIを画面から削除
-	if (LevelUpWidgetInstance)
-	{
-		LevelUpWidgetInstance->RemoveFromParent();
-	}*/
-}
-
-//Indexはレベルアップ時に選択したアップグレードの配列内インデックス(レベルアップ時UIの左の項目から０，１，２が入る)
+//Upgradeはレベルアップ時に選択したアップグレードの名前
 void AReibaiFightCharacter::ApplyUpgradeByID(FName UpgradeID)
 {
-	// OfferedUpgrades配列が有効なインデックスかチェック
-	//OfferedUpgradesはデータテーブルの行の名前の配列
-	// 
-	//if (!OfferedUpgradeIDs.IsValidIndex(Index))//Index=0のとき一番左のボタンに書かれたアップグレード項目の名前が入る
-	//{
-	//	UE_LOG(LogTemp, Error, TEXT("Invalid Upgrade Index: %d"), Index);
-	//	return;
-	//}
 
-	//選択されたアップグレードの行の名前を取得
-	//const FName UpgradeID = OfferedUpgradeIDs[Index];
-	
 	UE_LOG(LogTemp, Warning, TEXT("Upgrade Selected: %s"), *UpgradeID.ToString());
 
 	//取得済みリストに追加
+	//これをもとに強化などを行う
 	AcquiredUpgradeIDs.Add(UpgradeID);
 
 	//データテーブルから、選択されたアップグレードの完全なデータを取得
@@ -438,7 +424,7 @@ void AReibaiFightCharacter::ApplyUpgradeByID(FName UpgradeID)
 	{
 	//攻撃追加
 	case EUpgradeType::AddNewAttack:
-		// ... (AddComponentByClass を使ったコンポーネント追加処理) ...
+		//以下でAddComponentByClass を使ったコンポーネント追加処理
 		if(UpgradeData->AttackComponentClass)	//AttackComponentClassに設計図が指定されているか？
 		{
 			//指定されたクラスのコンポーネントを自分に追加
@@ -452,22 +438,35 @@ void AReibaiFightCharacter::ApplyUpgradeByID(FName UpgradeID)
 			{
 				NewAttack->RegisterComponent(); // コンポーネントを登録
 				UE_LOG(LogTemp, Warning, TEXT("Added new attack component: %s"), *NewAttack->GetName());
+				ActiveAttackComponents.Add(NewAttack);
+				StartAutoAttackTimer();
 			}
 		}
 		break;
 	//体力回復
 	case EUpgradeType::ModifyPlayerStat:
+
 		if (UpgradeData->PlayerStatToModify == "MaxHealth")
 		{
 			MaxHealth += UpgradeData->ModificationValue;
-			CurrentHealth = MaxHealth;
+			//CurrentHealth = MaxHealth;
 		}
+
+		//リジェネを実装したい
+		//if(UpgradeData->PlayerStatToModify == "")
+		//{
+		//	MaxSpiritPower += UpgradeData->ModificationValue;
+		//	CurrentSpiritPower = MaxSpiritPower;
+		//}
+
 		break;
 	//既存の能力強化
 	case EUpgradeType::ModifyAttackStat:
+
 		// 強化対象のコンポーネントを探す
 		TArray<UActorComponent*> Components;
 		GetComponents(Components); // 自分についている全コンポーネントを取得
+
 		for (UActorComponent* Component : Components)
 		{
 			//指定されたタグを持つコンポーネントか？
@@ -477,7 +476,8 @@ void AReibaiFightCharacter::ApplyUpgradeByID(FName UpgradeID)
 				UAttackComponentBase* AttackComp = Cast<UAttackComponentBase>(Component);
 				if (AttackComp)
 				{
-					AttackComp->Upgrade(UpgradeData->ModificationValue);
+					//AttackComponentBaseクラスのUpdate関数にUpgradeData構造体を引数とする
+					AttackComp->Upgrade(*UpgradeData);
 				}
 				break;
 			}
@@ -486,9 +486,9 @@ void AReibaiFightCharacter::ApplyUpgradeByID(FName UpgradeID)
 	}
 
 
-	// --- ゲームに戻る処理 ---
-
-	// 1. ゲームの一時停止を解除
+	//---以下ゲームに戻る処理---
+	
+	//ゲームの一時停止を解除
 	APlayerController* PlayerController = GetController<APlayerController>();
 	if (PlayerController)
 	{
@@ -497,7 +497,7 @@ void AReibaiFightCharacter::ApplyUpgradeByID(FName UpgradeID)
 		PlayerController->SetInputMode(FInputModeGameOnly()); // 入力モードをゲームのみに戻す
 	}
 
-	// 2. レベルアップUIを画面から削除
+	//レベルアップUIを画面から削除
 	if (LevelUpWidgetInstance)
 	{
 		LevelUpWidgetInstance->RemoveFromParent();
