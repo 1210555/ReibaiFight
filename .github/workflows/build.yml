@@ -53,8 +53,7 @@ jobs:
 
           # --- ここから下は編集不要 ---
 
-          & "$UE_ROOT\Engine\Build\BatchFiles\RunUAT.bat" BuildCookRun -project=$PROJECT_PATH -archive -archivedirectory=$ARCHIVE_DIR -platform=Win64 -clientconfig=Shipping -cook -stage -pak -prereqs
-
+          & "$UE_ROOT\Engine\Build\BatchFiles\RunUAT.bat" BuildCookRun "-project=$PROJECT_PATH" "-archive" "-archivedirectory=$ARCHIVE_DIR" "-platform=Win64" "-clientconfig=Shipping" "-cook" "-stage" "-pak" "-prereqs"
           Write-Host "Build Finished."
 
       # ステップ3: (オプション) 完成したビルドをzipで保存する
