@@ -148,3 +148,8 @@ Plugins/**/Intermediate/*
 
 DerivedDataCache/*
 
+# Packaged build outputs
+/Windows/
+/WindowsNoEditor/
+/Android/
+/iOS/

@@ -9,6 +9,8 @@
 #include "BaseCharacter.h"
 #include "ReibaiFightBFL.generated.h"
 
+class ABaseCharacter;
+
 UCLASS()
 class REIBAIFIGHT_API UReibaiFightBFL : public UBlueprintFunctionLibrary
 {
@@ -29,6 +31,7 @@ public:
 		const UObject* WorldContextObject, 
 		FVector Origin, 
 		float Radius,
-		AActor* ActorToIgnore //無視するアクタ（自分自身）
+		AActor* ActorToIgnore, //無視するアクタ（自分自身）
+		ABaseCharacter* Caller
 	);
 };

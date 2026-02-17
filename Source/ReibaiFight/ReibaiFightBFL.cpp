@@ -5,7 +5,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "ReibaiFightCharacter.h"
-#include "EnemySpirit.h"
+#include "BaseEnemy.h"
 #include "BaseCharacter.h"
 
 //ダメージを与える関数、引数は
@@ -13,7 +13,7 @@
 void UReibaiFightBFL::ApplyRadialDamage(AActor* Attacker, FVector Origin, float Radius, float BaseDamage, TSet<AActor*>& HitActors)
 {
 
-	UE_LOG(LogTemp, Warning, TEXT("BFL ApplyRadialDamage Started! Attacker: %s"), *Attacker->GetName());
+	//UE_LOG(LogTemp, Warning, TEXT("BFL ApplyRadialDamage Started! Attacker: %s"), *Attacker->GetName());
 
 	if (!Attacker) return;
 
@@ -21,7 +21,7 @@ void UReibaiFightBFL::ApplyRadialDamage(AActor* Attacker, FVector Origin, float 
 	bool bAttackerIsPlayer = Attacker->IsA(AReibaiFightCharacter::StaticClass());
 
 	//ダメージを与える対象のクラスを決定
-	UClass* ClassToTarget = bAttackerIsPlayer ? AEnemySpirit::StaticClass() : AReibaiFightCharacter::StaticClass();
+	UClass* ClassToTarget = bAttackerIsPlayer ? ABaseEnemy::StaticClass() : AReibaiFightCharacter::StaticClass();
 
 	//無視するアクターのリスト（攻撃者自身）
 	TArray<AActor*> ActorsToIgnore;
@@ -48,7 +48,7 @@ void UReibaiFightBFL::ApplyRadialDamage(AActor* Attacker, FVector Origin, float 
 			if (!HitActors.Contains(HitActor))
 			{
 				//誰にダメージ与えたか
-				UE_LOG(LogTemp, Warning, TEXT("BFL Applying Damage to: %s"), *HitActor->GetName());
+				//UE_LOG(LogTemp, Warning, TEXT("BFL Applying Damage to: %s"), *HitActor->GetName());
 
 				// ヒットした敵にダメージを与える
 				UGameplayStatics::ApplyDamage(
@@ -64,7 +64,8 @@ void UReibaiFightBFL::ApplyRadialDamage(AActor* Attacker, FVector Origin, float 
 	}
 }
 
-ABaseCharacter* UReibaiFightBFL::GetNearestEnemy(const UObject* WorldContextObject, FVector Origin, float Radius, AActor* ActorToIgnore)
+//引数はWorld,自分の現在地,探索半径,無視するアクタ（自分自身）
+ABaseCharacter* UReibaiFightBFL::GetNearestEnemy(const UObject* WorldContextObject, FVector Origin, float Radius, AActor* ActorToIgnore, ABaseCharacter* Caller)
 {
 	/*TArray<AActor*> FoundActors;
 	UGameplayStatics::GetAllActorsOfClass(WorldContextObject, ABaseCharacter::StaticClass(), FoundActors);
@@ -95,13 +96,11 @@ ABaseCharacter* UReibaiFightBFL::GetNearestEnemy(const UObject* WorldContextObje
 	for (AActor* Actor : FoundActors)
 	{
 		// 自分自身は無視する
-		if (Actor == ActorToIgnore)
-		{
-			continue;
-		}
+		if (Actor == ActorToIgnore)	continue;
 
 		ABaseCharacter* BaseChar = Cast<ABaseCharacter>(Actor);
-		if (BaseChar && BaseChar->GetCurrentHealth() > 0) // 生きているキャラクターのみを対象
+		//BaseCharが存在しかつ、体力が０より大きくかつ、BaseCharと呼び出したアクタの陣営が同じかどうかをチェック
+		if (BaseChar && BaseChar->GetCurrentHealth() > 0 && BaseChar->TeamID != Caller->TeamID)
 		{
 			float DistanceSquared = FVector::DistSquared(Origin, Actor->GetActorLocation());
 			if (DistanceSquared < MinDistanceSquared)

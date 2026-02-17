@@ -68,7 +68,15 @@ public:
 	//体力が更新された時にブループリント側で呼び出されるイベント
 	//これによりイベント駆動型への移行
 	UFUNCTION(BlueprintImplementableEvent, Category = "Health")
-	void OnHealthUpdated(float Current, float Max); // ← これを追加
+	void OnHealthUpdated(float Current, float Max);
+
+	//Expの更新をブループリント側で呼び出すイベント
+	UFUNCTION(BlueprintImplementableEvent, Category = "Health")
+	void OnExperienceUpdated(int32 CurrentXPAmount, int32 NextXPAmount);
+
+	//レベルの更新をブループリント側で呼び出すイベント
+	UFUNCTION(BlueprintImplementableEvent, Category = "Levelup")
+	void OnCurrentLevelUpdated(int32 NewLevel);
 
 protected:
 	//ただのvoid関数はUEエディタ内で使用できない、内部の計算などを行うときはただのvoidにする。
@@ -121,6 +129,14 @@ protected:
 	//プレイヤーの死亡処理(ゲームオーバー時のUI表示)
 	virtual void Die() override;
 
+	//取得したアップグレードをUIに表示させるイベント
+	UFUNCTION(BlueprintImplementableEvent, Category = "LevelUp")
+	void OnUpgradeAcquired(const FUpgradeData& AcquiredUpgrade);
+
+	////UIに表示する経験値、GainExperience関数でCurrentXPと同じ値に更新され、LevelUpで-=XPToNextLevelupとなる。CurrentXPは加算されて行ってしまうため
+	//UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "LevelUp")
+	//int32 UIExperienceDisplay = 0;
+
 protected:
 	// APawn interface
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
@@ -170,7 +186,7 @@ protected:
 	void ApplyUpgradeByID(FName UpgradeID);
 	
 	// 提示しているアップグレードの「行の名前」のリスト
-//これがないとアップグレードの
+	//これがないとアップグレードの
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "LevelUp")
 	TArray<FName> OfferedUpgradeIDs;
 
@@ -178,10 +194,32 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "LevelUp")
 	UDataTable* UpgradesDataTable;
 
+	//プールのリスト (AHitodamaBase のポインタ配列)
+	//プーリングしたいものを変更したい場合はAHitodamaBaseの部分を書き換える
+	UPROPERTY(VisibleAnywhere, Category = "Combat|Pooling")
+	TArray<TObjectPtr<class AHitodamaBase>> HitodamaPool;
+
+	//現在起動している人魂の数
+	//ActiveHitodamaCountは出現できる最大のひとだまの個数
+	//アップグレード時にこの値を増やす
+	UPROPERTY(VisibleAnywhere, Category = "Combat|Pooling")
+	int32 ActiveHitodamaCount = 0;
+
+	UPROPERTY(EditAnywhere, Category = "Combat|Pooling")
+	TSubclassOf<class AHitodamaBase> HitodamaClass;
+
+	//UFUNCTION(BlueprintCallable, Category = "Hitodama")
+	//void ActivateAllHitodamas();
+
+	//UFUNCTION(BlueprintCallable, Category = "Hitodama")
+	//void DeactivateAllHitodamas();
+
 public:
 	/** Returns CameraBoom subobject **/
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 	/** Returns FollowCamera subobject **/
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
+
+	int32 AllyChance;
 };
 

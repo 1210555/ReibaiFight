@@ -32,16 +32,16 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Loot")
 	TSubclassOf<AActor> ExperienceParticleClass;
 
-	UPROPERTY(EditAnywhere, Category = "Combat")
-	UAnimMontage* AttackMontage;
+	//UPROPERTY(EditAnywhere, Category = "Combat")
+	//UAnimMontage* AttackMontage;
 
 	TSet<AActor*> HitActorsDuringAttack;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
 	float AttackEnemyDamage;//敵の攻撃力(コンストラクタで初期化)
 
-	UFUNCTION(BlueprintCallable, Category = "Combat",meta=(ToolTip="Enemy Attack animaiton and Logic!!!!!!!!"))
-	void Attack();
+	//UFUNCTION(BlueprintCallable, Category = "Combat",meta=(ToolTip="Enemy Attack animaiton and Logic!!!!!!!!"))
+	//void Attack();
 
 	UFUNCTION(BlueprintCallable, Category = "Combat")
 	virtual void AttackHitCheck(float DamageAmount);

@@ -46,7 +46,7 @@ void AEnemySpirit::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 
 float AEnemySpirit::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
-    UE_LOG(LogTemp, Error, TEXT("ENEMY TakeDamage called!"))
+    //UE_LOG(LogTemp, Error, TEXT("ENEMY TakeDamage called!"))
 
     float DamageApplied = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 
@@ -105,61 +105,65 @@ void AEnemySpirit::Die()
     //このままだとスポーン、デストロイを繰り返し重くなる。
 }
 
-void AEnemySpirit::Attack()
-{
-	//前回までの攻撃でヒットしたアクターのリストをクリア(多段ヒット防止用)
-    HitActorsDuringAttack.Empty();
-
-	//アニメーションインスタンスを取得
-    UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-
-    //アニメーションインスタンスと再生すべき攻撃モンタージュが存在するか確認
-    if (AnimInstance&&AttackMontage)
-    {
-		//攻撃モンタージュが再生中でない場合にのみ再生
-        //近いときにずっと攻撃モーションをすることを防ぐ
-        if (AnimInstance && !AnimInstance->Montage_IsPlaying(AttackMontage))
-        {
-            UE_LOG(LogTemp, Log, TEXT("Enemy playing Attack Montage"));
-            AnimInstance->Montage_Play(AttackMontage);
-        }
-	}
-    else
-    {
-        //切り分け用ログ
-        if(!AnimInstance)
-        {
-            UE_LOG(LogTemp, Warning, TEXT("Enemy Attack(): AnimInstance is null"));
-		}
-        if (!AttackMontage)
-        {
-            UE_LOG(LogTemp, Warning, TEXT("Enemy Attack(): AttackMontage is not set in Blueprint"));
-        }
-	}
-}
+//void AEnemySpirit::Attack()
+//{
+//	//前回までの攻撃でヒットしたアクターのリストをクリア(多段ヒット防止用)
+//    HitActorsDuringAttack.Empty();
+//
+//	//アニメーションインスタンスを取得
+//    UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+//
+//    //アニメーションインスタンスと再生すべき攻撃モンタージュが存在するか確認
+//    if (AnimInstance&&AttackMontage)
+//    {
+//		//攻撃モンタージュが再生中でない場合にのみ再生
+//        //近いときにずっと攻撃モーションをすることを防ぐ
+//        if (AnimInstance && !AnimInstance->Montage_IsPlaying(AttackMontage))
+//        {
+//            //UE_LOG(LogTemp, Log, TEXT("Enemy playing Attack Montage"));
+//            AnimInstance->Montage_Play(AttackMontage);
+//        }
+//	}
+//    else
+//    {
+//        //切り分け用ログ
+//        if(!AnimInstance)
+//        {
+//            UE_LOG(LogTemp, Warning, TEXT("Enemy Attack(): AnimInstance is null"));
+//		}
+//        if (!AttackMontage)
+//        {
+//            UE_LOG(LogTemp, Warning, TEXT("Enemy Attack(): AttackMontage is not set in Blueprint"));
+//        }
+//	}
+//}
 
 void AEnemySpirit::AttackHitCheck(float DamageAmount)
 {
-    UE_LOG(LogTemp, Log, TEXT("Enemy AttackHitCheck CALLED !"));
+    //UE_LOG(LogTemp, Log, TEXT("Enemy AttackHitCheck CALLED !"));
 	
     // --- 敵自身の攻撃の中心位置と半径を計算 ---
-    const FVector HitOrigin = GetActorLocation() + GetActorForwardVector() * 100.0f; // 例: 自分の前方100ユニット
-    const float HitRadius = 100.0f; // 例: 敵の攻撃半径
+	//GetActorLocation()で敵の中心位置、GetActorForwardVector()は単位ベクトルだから100.0fを掛け算して前方にずらす
+    //const FVector HitOrigin = GetActorLocation() + GetActorForwardVector() * 100.0f; // 例: 自分の前方100ユニット
 
-    UReibaiFightBFL::ApplyRadialDamage(
-        this,
-        HitOrigin,
-        HitRadius,
-        AttackEnemyDamage,
-        HitActorsDuringAttack //多段ヒット防止の配列
-    );
+    //const float HitRadius = 80.0f; // 例: 敵の攻撃半径
+
+    //UReibaiFightBFL::ApplyRadialDamage(
+    //    this,
+    //    HitOrigin,
+    //    HitRadius,
+    //    AttackEnemyDamage,
+    //    HitActorsDuringAttack //多段ヒット防止の配列
+    //);
     //DrawDebugSphere(GetWorld(), HitOrigin, HitRadius, 12, FColor::Orange, false, 2.0f);
 }
 
 void AEnemySpirit::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-    // 重なった相手がプレイヤーか？ (かつ、自分自身ではないか？)
+	//プレイヤーをPlayerCharacterクラスとしてキャスト
     AReibaiFightCharacter* PlayerCharacter = Cast<AReibaiFightCharacter>(OtherActor);
+
+    //このイベントが発生するとき、触れたものがプレイヤーでかつ自分自身でない時
     if (PlayerCharacter && OtherActor != this)
     {
         // プレイヤーなら、自分（敵）の攻撃力でダメージを与える

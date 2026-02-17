@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Engine/DataTable.h"
+#include "NiagaraSystem.h"
 #include "MyDataTypes.generated.h" // ファイル名に合わせて変更
 
 // 前方宣言
@@ -54,25 +55,33 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (Tooltip = "ここで設定するBPをもとにアタックコンポーネント生成"))
     TSubclassOf<UAttackComponentBase> AttackComponentClass;
 
-    // (ModifyPlayerStat用) 変更するステータスの名前
-	//体力回復などはここに"MaxHealth"が入る
-    UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (Tooltip = "ModifyPlayerStatの値を変化する場合何の値を変更するかを記述"))
-    FName PlayerStatToModify;
-
     // (ModifyAttackStat用) 強化する攻撃コンポーネントのタグ
     UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (Tooltip = "BPで設定しているタグと一致しているものをレベルアップ時に探してくる"))
     FName AttackComponentTag;
 
-    // 強化する量
-    UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (Tooltip = "攻撃の威力をどれだけ増やすか(float型)"))
-    float ModificationAttackAmount;
 
-    UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (Tooltip = "攻撃の頻度をどれだけ短縮するか(記述した % だけ短縮)"))
-    float ModificationFrequentValue;
+    //強化したいステータスと量を決めるTMap
+    UPROPERTY(EditAnywhere, BlueprintReadOnly)
+    TMap<FName, float> StatModifications;
 
-    UPROPERTY(EditAnywhere, BlueprintReadOnly, meta=(Tooltip = "体力の回復などModifyPlayerStatの値をどれだけ変更するか"))
-    float ModificationValue;
-
+	//何度でも取得可能なアップグレードかどうか
+	//体力回復など効果が永久でないものなどはfalseにする
 	UPROPERTY(EditAnywhere, BlueprintReadOnly,meta = (Tooltip = "何度でも取得可能なアップグレードはtrueにする"))
 	bool bIsRepeatable;
+
+    //選択したアップグレードのナイアガラエフェクトを変更しいたいときにセット
+    //攻撃コンポーネントなどは初期状態はそのコンポーネントのBPでセットされていて
+	//強化後にナイアガラエフェクトを変えたいときはデータテーブルでここにセットしたものが上書きされる感じ
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (Tooltip = "Set new Niagara here if you change to new NiagaraEffect"))
+    TObjectPtr<UNiagaraSystem> NewNiagaraEffect;
+
+    //スポーンするアクタのクラス
+    //スポーンさせる時だけ入れるところ。
+    UPROPERTY(EditAnywhere, BlueprintReadOnly)
+    TSubclassOf<AActor> ActorToSpawn;
+
+    //カードの背景色（レアリティやレベルに応じて設定）
+    //アッグレード時に表示される画像の背景の色をデータテーブルから変更できるように
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (Tooltip = "UI表示時のカード背景色"))
+    FLinearColor BackgroundColor = FLinearColor::White; // デフォルトは白
 };

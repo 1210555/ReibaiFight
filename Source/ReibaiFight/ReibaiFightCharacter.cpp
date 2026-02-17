@@ -17,6 +17,8 @@
 #include "DrawDebugHelpers.h"            // デバッグ表示に必要
 #include "Blueprint/UserWidget.h" // UUserWidgetを使う場合に必要
 #include "MyDataTypes.h"
+#include "PIDTrackingComponent.h"
+#include "HitodamaBase.h"
 
 
 
@@ -67,8 +69,7 @@ void AReibaiFightCharacter::BeginPlay()
 {
 	// Call the base class  
 	Super::BeginPlay();
-	CurrentHealth = MaxHealth;
-	CurrentSpiritPower = MaxSpiritPower;
+
 
 	//割り当てた行動を教える
 	//IMC Defaultに追加する
@@ -80,8 +81,46 @@ void AReibaiFightCharacter::BeginPlay()
 			Subsystem->AddMappingContext(DefaultMappingContext, 0);
 		}
 	}
+	
+	CurrentHealth = MaxHealth;
+	CurrentSpiritPower = MaxSpiritPower;
+
 	//体力バーの初期化（最初はcurrentとmaxどちらも100）
 	OnHealthUpdated(CurrentHealth, MaxHealth);
+	OnExperienceUpdated(CurrentXP, XPToNextLevel);
+
+	if (HitodamaClass)
+	{
+		// 例えば 10個 予備を作っておく
+		int32 PoolSize = 10;
+
+		for (int32 i = 0; i < PoolSize; i++)
+		{
+			// スポーンパラメータ設定
+			FActorSpawnParameters SpawnParams;
+			SpawnParams.Owner = this;
+			SpawnParams.Instigator = GetInstigator();
+
+			// ひとだまを生成
+			//スポーンしたひとだまのポインタをNewHitodamaに格納
+			AHitodamaBase* NewHitodama = GetWorld()->SpawnActor<AHitodamaBase>(
+				HitodamaClass,//ひとだまのBPクラスとして定義したもの（ヘッダファイルでTSubClassObjectで宣言している）
+				GetActorLocation(),//ひとだまのスポーンした位置取得
+				FRotator::ZeroRotator,//ひとだまのスポーンした角度取得
+				SpawnParams//スポーンしたときのパラメータ
+			);
+
+			if (NewHitodama)
+			{
+				// 最初は非表示・停止状態にしておく
+				NewHitodama->Deactivate();
+
+				// 配列（プール）に追加
+				HitodamaPool.Add(NewHitodama);
+			}
+		}
+	}
+
 }
 
 //キャラクターがプレイヤーに操作され始める最初の一回だけ呼ばれる
@@ -110,7 +149,7 @@ void AReibaiFightCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInp
 
 		// Looking
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AReibaiFightCharacter::Look);
-		UE_LOG(LogTemp, Warning, TEXT("Attack Action. SetupPlayerInoutComponent"));
+
 		//攻撃の動作
 		EnhancedInputComponent->BindAction(StrongPunch1Action, ETriggerEvent::Triggered, this, &AReibaiFightCharacter::Attack);
 
@@ -125,7 +164,6 @@ void AReibaiFightCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInp
 
 void AReibaiFightCharacter::Move(const FInputActionValue& Value)
 {
-	//UE_LOG(LogTemp, Warning, TEXT("Move"));
 	// input is a Vector2D
 	FVector2D MovementVector = Value.Get<FVector2D>();
 
@@ -165,8 +203,7 @@ void AReibaiFightCharacter::Attack(const FInputActionValue& Value)
 	//これがないと多段ヒット防止のためのHitActorsに一度しかはいらず
 	//2回目以降の攻撃が当たらなくなる
 	HitActors.Empty(); //新しい攻撃のたびにヒットしたアクターのリストをクリア
-	// input is a bool
-	UE_LOG(LogTemp, Warning, TEXT("Attack"));
+
 	bool bPressed = Value.Get<bool>();
 	if (bPressed)
 	{
@@ -187,7 +224,7 @@ void AReibaiFightCharacter::Punch1(const FInputActionValue& Value)
 {
 	HitActors.Empty(); //新しい攻撃のたびにヒットしたアクターのリストをクリア
 	// ログを出して、関数が呼ばれたか確認
-	UE_LOG(LogTemp, Warning, TEXT("Punch1 function called!"));
+	//UE_LOG(LogTemp, Warning, TEXT("Punch1 function called!"));
 
 	bool bPressed = Value.Get<bool>();
 	if (bPressed)
@@ -206,7 +243,6 @@ void AReibaiFightCharacter::Punch1(const FInputActionValue& Value)
 
 void AReibaiFightCharacter::AttackHitCheck(float DamageAmount)
 {
-	UE_LOG(LogTemp, Warning, TEXT("Player AttackHitCheck CALLED via BFL!"));
 
 	//--- 当たり判定の中心位置を計算 ---
 	//拳のソケット位置を取得 (ソケット名 "Fist_R_Socket")
@@ -234,9 +270,6 @@ float AReibaiFightCharacter::TakeDamage(float DamageAmount, FDamageEvent const& 
 	float DamageApplied = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 	
 
-	UE_LOG(LogTemp, Error, TEXT("[C++] %s took %f damage. Current Health: %f"), *GetName(), DamageApplied, CurrentHealth);
-
-
 	if (DamageApplied > 0.f) {
 
 		OnHealthUpdated(CurrentHealth, MaxHealth);
@@ -245,9 +278,7 @@ float AReibaiFightCharacter::TakeDamage(float DamageAmount, FDamageEvent const& 
 		if (CurrentHealth <= 0.0f)
 		{
 			//プレイヤーの死亡処理 (例: ゲームオーバー画面表示、リスタートなど)をいれる
-			UE_LOG(LogTemp, Error, TEXT("PLAYER DIED!"));
 			Die();
-			// 操作不能にするなど
 		}
 		else
 		{
@@ -262,15 +293,15 @@ void AReibaiFightCharacter::Die()
 
 	APlayerController* PlayerController = GetController<APlayerController>();
 
-	// 1. UIが存在するかチェック
+	// UIが存在するかチェック
 	if (GameOverWidgetClass && PlayerController)
 	{
-		// 2. ゲームを一時停止し、マウスカーソルを表示
+		// ゲームを一時停止し、マウスカーソルを表示
 		PlayerController->SetPause(true);
 		PlayerController->bShowMouseCursor = true;
 		PlayerController->SetInputMode(FInputModeUIOnly()); // マウス操作をUIのみに限定
 
-		// 3. UIを作成して画面に追加
+		// UIを作成して画面に追加
 		UUserWidget* GameOverWidget = CreateWidget<UUserWidget>(GetWorld(), GameOverWidgetClass);
 		if (GameOverWidget)
 		{
@@ -278,7 +309,7 @@ void AReibaiFightCharacter::Die()
 		}
 	}
 
-	// 4. キャラクターの当たり判定と動きを停止
+	// キャラクターの当たり判定と動きを停止
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	GetCharacterMovement()->DisableMovement();
 	DisableInput(PlayerController); // プレイヤーの入力を無効化
@@ -292,7 +323,7 @@ void AReibaiFightCharacter::StartAutoAttackTimer()
 		return;
 	}
 
-	UE_LOG(LogTemp, Warning, TEXT("Auto Attack Timer Started!"));
+	//UE_LOG(LogTemp, Warning, TEXT("Auto Attack Timer Started!"));
 	GetWorld()->GetTimerManager().SetTimer(
 		AutoAttackTimerHandle,
 		this,
@@ -305,7 +336,7 @@ void AReibaiFightCharacter::StartAutoAttackTimer()
 //タイマーで定期的に行われる処理
 void AReibaiFightCharacter::TriggerAutoAttack()
 {
-	UE_LOG(LogTemp, Log, TEXT("Triggering All Auto Attacks..."));
+	//UE_LOG(LogTemp, Log, TEXT("Triggering All Auto Attacks..."));
 	// 所持している全ての自動攻撃コンポーネントの攻撃を実行
 	for (UAttackComponentBase* AttackComp : ActiveAttackComponents)
 	{
@@ -319,19 +350,22 @@ void AReibaiFightCharacter::TriggerAutoAttack()
 void AReibaiFightCharacter::GainExperience(int32 XPAmount)
 {
 	CurrentXP += XPAmount;
-	UE_LOG(LogTemp, Warning, TEXT("Gained %d XP. Current XP: %d / %d"), XPAmount, CurrentXP, XPToNextLevel);
 
 	// もし現在の経験値が必要経験値を超えたらレベルアップ
 	if (CurrentXP >= XPToNextLevel)
 	{
 		LevelUp();
 	}
+
+	UE_LOG(LogTemp, Log, TEXT("Current XP: %d Next XP Amount %d !"), CurrentXP, XPToNextLevel);
+	OnExperienceUpdated(CurrentXP, XPToNextLevel); //経験値バーの更新。中身はBP
 }
 
 void AReibaiFightCharacter::LevelUp()
 {
 	// レベルアップ処理
 	CurrentLevel++;
+	OnCurrentLevelUpdated(CurrentLevel); //レベルアップの通知。中身はBP
 
 	// 余った経験値を次のレベルに持ち越す
 	CurrentXP -= XPToNextLevel;
@@ -339,8 +373,7 @@ void AReibaiFightCharacter::LevelUp()
 	// 次のレベルに必要な経験値を増やす（例：1.5倍にする）
 	XPToNextLevel = FMath::RoundToInt(XPToNextLevel * 1.5f);
 
-	UE_LOG(LogTemp, Warning, TEXT("LEVEL UP! New Level: %d. Next XP: %d"), CurrentLevel, XPToNextLevel);
-
+	//ここで次のレベルまでの経験値の上限を決めてもいいかも
 
 	if (UpgradesDataTable) // データテーブルが設定されているかチェック
 	{
@@ -351,28 +384,32 @@ void AReibaiFightCharacter::LevelUp()
 		//データテーブルから全ての行の名前を取得
 		TArray<FName> AllUpgradeIDs = UpgradesDataTable->GetRowNames();
 
-		// 1. 抽選対象の「候補」を入れるための、空のリストを新しく用意
+		//抽選対象の「候補」を入れるための、空のリストを新しく用意
 		TArray<FName> AvailableUpgradeIDs;
 
-		// 2. データテーブルの全てのアップグレードを1つずつチェック
+		//データテーブルの全てのアップグレードを1つずつチェック
 		for (const FName& UpgradeID : AllUpgradeIDs)
 		{
 			// データテーブルからアップグレードの情報を取得
 			FUpgradeData* Row = UpgradesDataTable->FindRow<FUpgradeData>(UpgradeID, TEXT(""));
 			if (!Row) continue; // データが見つからなければスキップ
 
-			// --- 条件A: まだ取得していないアップグレードか？ ---
-			bool bAlreadyAcquired = AcquiredUpgradeIDs.Contains(UpgradeID);
-
-			// --- 条件B: 前提条件を満たしているか？ ---
 			//    「前提条件が設定されていない(None)」または「前提条件IDを既に取得済み」
 			bool bPrerequisiteMet = Row->PrerequisiteID.IsNone() || AcquiredUpgradeIDs.Contains(Row->PrerequisiteID);
-
-			// 3. 両方の条件を満たした場合のみ、抽選「候補」リストに追加
-			if (!bAlreadyAcquired && bPrerequisiteMet)
+			if (!bPrerequisiteMet)
 			{
-				AvailableUpgradeIDs.Add(UpgradeID);
+				// 前提条件を満たしていないものは除外
+				continue;
 			}
+
+			//「既に取得済み」かつ「繰り返し取得不可」
+			bool bAlreadyAcquired = AcquiredUpgradeIDs.Contains(UpgradeID);
+			// 3. 両方の条件を満たした場合のみ、抽選「候補」リストに追加
+			if (bAlreadyAcquired && !Row->bIsRepeatable)
+			{
+				continue;
+			}
+			AvailableUpgradeIDs.Add(UpgradeID);
 		}
 
 		// リストをシャッフル
@@ -402,9 +439,6 @@ void AReibaiFightCharacter::LevelUp()
 //Upgradeはレベルアップ時に選択したアップグレードの名前
 void AReibaiFightCharacter::ApplyUpgradeByID(FName UpgradeID)
 {
-
-	UE_LOG(LogTemp, Warning, TEXT("Upgrade Selected: %s"), *UpgradeID.ToString());
-
 	//取得済みリストに追加
 	//これをもとに強化などを行う
 	AcquiredUpgradeIDs.Add(UpgradeID);
@@ -425,7 +459,27 @@ void AReibaiFightCharacter::ApplyUpgradeByID(FName UpgradeID)
 	//攻撃追加
 	case EUpgradeType::AddNewAttack:
 		//以下でAddComponentByClass を使ったコンポーネント追加処理
-		if(UpgradeData->AttackComponentClass)	//AttackComponentClassに設計図が指定されているか？
+		//TagがHitodamaの攻撃追加
+		if (UpgradeData->AttackComponentTag == FName("Hitodama"))
+		{
+			//プールにまだ予備があるかを確認
+			if (HitodamaPool.IsValidIndex(ActiveHitodamaCount))
+			{
+				//プールから次の人魂を取り出して「起動」
+				HitodamaPool[ActiveHitodamaCount]->Activate(GetRootComponent());
+
+				//初期の配置角度を0度に設定
+				HitodamaPool[ActiveHitodamaCount]->SetOrbitAngle(0.0f); 
+
+				//ここでカウントを増やす
+				//１番目(ActiveHitodamaCountの初期値は１)はもう使ったから、次は２番目を使うという意味
+				ActiveHitodamaCount++;
+
+			}
+		}
+		//設定されているかいないかのみのtrue,false
+		//UpgradeDataのAttackComponentClassがあるかどうか
+		else if(UpgradeData->AttackComponentClass)
 		{
 			//指定されたクラスのコンポーネントを自分に追加
 			//型がUActorComponentのため以下でキャストが必要
@@ -437,33 +491,57 @@ void AReibaiFightCharacter::ApplyUpgradeByID(FName UpgradeID)
 			if (NewAttack)
 			{
 				NewAttack->RegisterComponent(); // コンポーネントを登録
-				UE_LOG(LogTemp, Warning, TEXT("Added new attack component: %s"), *NewAttack->GetName());
-				ActiveAttackComponents.Add(NewAttack);
-				StartAutoAttackTimer();
+				NewAttack->ActivateAttack();
+				OnUpgradeAcquired(*UpgradeData);
 			}
 		}
 		break;
+
 	//体力回復
 	case EUpgradeType::ModifyPlayerStat:
-
-		if (UpgradeData->PlayerStatToModify == "MaxHealth")
+	{
+		// TMap<FName, float> StatModifications の中身を一つずつ取り出す
+		for (const auto& Elem : UpgradeData->StatModifications)
 		{
-			MaxHealth += UpgradeData->ModificationValue;
-			//CurrentHealth = MaxHealth;
+			//データテーブルのStatModifications項目の左がキーである何を変更したいか
+			//右がどれくらい変更するか
+			// キー (例: "MaxHealth", "Heal")、値 (例: 20.0, 50.0)
+			const FName StatName = Elem.Key;   
+			const float Value = Elem.Value;
+
+			// キーの名前に応じて処理を分岐
+			if (StatName == "MaxHealth")
+			{
+				MaxHealth += Value;
+				CurrentHealth += Value; // 最大値が上がった分、現在値も回復
+				OnHealthUpdated(CurrentHealth, MaxHealth); // UIに通知
+			}
+			else if (StatName == "Heal")
+			{
+				CurrentHealth = FMath::Min(CurrentHealth + Value, MaxHealth);
+				OnHealthUpdated(CurrentHealth, MaxHealth); // UIに通知
+			}
+			else if (StatName == "FullHeal")
+			{
+				CurrentHealth = MaxHealth;
+				OnHealthUpdated(CurrentHealth, MaxHealth); // UIに通知
+			}
+			else if (StatName == "MovementSpeed")
+			{
+				GetCharacterMovement()->MaxWalkSpeed += Value;
+			}
+			else if (StatName == "AllyAttackChance")
+			{
+				AllyChance += Value;
+			}
 		}
-
-		//リジェネを実装したい
-		//if(UpgradeData->PlayerStatToModify == "")
-		//{
-		//	MaxSpiritPower += UpgradeData->ModificationValue;
-		//	CurrentSpiritPower = MaxSpiritPower;
-		//}
-
 		break;
+	}
+
 	//既存の能力強化
 	case EUpgradeType::ModifyAttackStat:
 
-		// 強化対象のコンポーネントを探す
+		//強化対象のコンポーネントを探す
 		TArray<UActorComponent*> Components;
 		GetComponents(Components); // 自分についている全コンポーネントを取得
 
@@ -478,15 +556,74 @@ void AReibaiFightCharacter::ApplyUpgradeByID(FName UpgradeID)
 				{
 					//AttackComponentBaseクラスのUpdate関数にUpgradeData構造体を引数とする
 					AttackComp->Upgrade(*UpgradeData);
+					OnUpgradeAcquired(*UpgradeData);
 				}
-				break;
+			}
+		}
+
+		//ひとだまを強化
+		//親クラスがActorのため同じところでアップデートができないため
+		//ここで強化を行う。
+		if (UpgradeData->AttackComponentTag == FName("Hitodama") || UpgradeData->StatModifications.Contains("Quantity"))
+		{
+			//既存のすべてのひとだまを強化（ダメージUPなど）
+			//Quantityの場合はここでは強化は行わない
+			for (TObjectPtr<AHitodamaBase> Hitodama : HitodamaPool)
+			{
+				if (Hitodama)
+				{
+					Hitodama->Upgrade(*UpgradeData);
+				}
+			}
+
+			//数を増やす処理 (ModifyPlayerStatからここに移動)
+			if (UpgradeData->StatModifications.Contains("Quantity"))
+			{
+				int32 AddCount = FMath::RoundToInt(UpgradeData->StatModifications["Quantity"]);
+				UE_LOG(LogTemp, Warning, TEXT("Hitodama Quantity Increasing by: %d"), AddCount);
+
+				int32 OldCount = ActiveHitodamaCount;
+				int32 NewTotalCount = OldCount + AddCount;
+
+				// プールの上限を超えないようにガード（念のため）
+				if (NewTotalCount > HitodamaPool.Num())
+				{
+					NewTotalCount = HitodamaPool.Num();
+				}
+
+				//増やしたいひとだまをまず起動する
+				for(int32 i= OldCount; i< NewTotalCount; ++i)
+				{
+					if (HitodamaPool.IsValidIndex(i))
+					{
+						// 次の人魂を起動
+						HitodamaPool[i]->Activate(GetRootComponent());
+						// 出した瞬間にも強化を適用（Lv1の強さで出ないように）
+						HitodamaPool[i]->Upgrade(*UpgradeData);
+					}
+				}
+
+				//カウントを正式に更新
+				ActiveHitodamaCount = NewTotalCount;
+				if (ActiveHitodamaCount > 0) {
+					float AngleStep = 360.0f / ActiveHitodamaCount;
+					for (int32 i = 0; i < ActiveHitodamaCount; ++i)
+					{
+						if (HitodamaPool.IsValidIndex(ActiveHitodamaCount))
+						{
+							float NewAngle = i * AngleStep;
+
+							//角度だけを変えたいから
+							HitodamaPool[i]->SetOrbitAngle(NewAngle);
+						}
+					}
+				}
 			}
 		}
 		break;
 	}
 
-
-	//---以下ゲームに戻る処理---
+	//---ゲームに戻る処理---
 	
 	//ゲームの一時停止を解除
 	APlayerController* PlayerController = GetController<APlayerController>();
@@ -504,3 +641,37 @@ void AReibaiFightCharacter::ApplyUpgradeByID(FName UpgradeID)
 		LevelUpWidgetInstance = nullptr; // 変数をクリア
 	}
 }
+
+//void AReibaiFightCharacter::ActivateAllHitodamas()
+//{
+//	// ここでループを回す（これが部長の仕事）
+//
+//	int32 Count = 3; // 出したい数（変数にしてもOK）
+//	float AngleStep = 360.0f / Count; // 120度ずつ
+//
+//	for (int32 i = 0; i < Count; i++)
+//	{
+//		// プールからひとだまを取り出す
+//		if (HitodamaPool.IsValidIndex(i))
+//		{
+//			float NewAngle = i * AngleStep; // 0, 120, 240...
+//
+//			// ここで、さきほど改造した「角度指定ありのActivate」を呼ぶ
+//			HitodamaPool[i]->Activate(GetRootComponent(), NewAngle);
+//		}
+//	}
+//}
+//
+//// 死亡時などに呼ぶ関数
+//void AReibaiFightCharacter::DeactivateAllHitodamas()
+//{
+//	// 持っている数が0なら、ループに入らないので何も起きない（安全）
+//	for (int32 i = 0; i < ActiveHitodamaCount; i++)
+//	{
+//		if (HitodamaPool.IsValidIndex(i))
+//		{
+//			HitodamaPool[i]->SetActorHiddenInGame(true);
+//			HitodamaPool[i]->SetActorTickEnabled(false);
+//		}
+//	}
+//}

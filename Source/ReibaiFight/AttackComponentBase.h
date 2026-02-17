@@ -16,6 +16,13 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
+	//この攻撃の攻撃間隔（秒）。デフォルト値を設定。
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+	float AttackRate = 5.0f;
+
+	// このコンポーネント専用のタイマーハンドル
+	FTimerHandle AttackTimerHandle;
+
 public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
@@ -23,9 +30,8 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Combat")
 	virtual void PerformAttack(); // C++の子クラスがoverrideするための 'virtual' 関数
 
-	// ブループリント側でイベントとして実装するための関数 (今回は使いませんが、こういう書き方もあります)
-	// UFUNCTION(BlueprintNativeEvent, Category = "Combat")
-	// void PerformAttack_Blueprint();
+	// このコンポーネントの自動攻撃タイマーを開始（または更新）する関数
+	virtual void ActivateAttack();
 
 	//子クラスでアップグレードを実装
 	virtual void Upgrade(const FUpgradeData& UpgradeData);

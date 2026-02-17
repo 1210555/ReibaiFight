@@ -8,7 +8,7 @@ ABaseCharacter::ABaseCharacter()
 {
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
-
+	TeamID = EEnemyTeam::Ally;
 }
 
 // Called when the game starts or when spawned
@@ -41,11 +41,31 @@ float ABaseCharacter::TakeDamage(float DamageAmount, FDamageEvent const& DamageE
 		return 0;
 	}
 
+	//ダメージを与えたキャラクター
+	ABaseCharacter* AttackerCharacter = nullptr;
+
+	//EventInstigatorつまり攻撃を与えた者のコントローラーが存在する場合
+	if (EventInstigator)
+	{
+		//TakeDmageを呼び出したキャラクターを取得
+		AttackerCharacter = Cast<ABaseCharacter>(EventInstigator->GetPawn());
+	}
+
+	//陣営が同じときダメージ無効(フレンドリーファイアOff)
+	if (AttackerCharacter && AttackerCharacter->TeamID == this->TeamID) {
+		//自傷ダメージ、爆風でジャンプなど攻撃を利用する場合は必要
+		//if(AttackerCharacter!=this)
+		//{
+			//同じ陣営ならダメージを受けない
+			return 0.0f;
+		//}
+	}
+
 	//まず親クラスのTakeDamageを呼び出して、最終的なダメージ量を計算してもらう (重要！)
 	float DamageApplied = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 
 
-	UE_LOG(LogTemp, Error, TEXT("[C++] %s took %f damage. Current Health: %f"), *GetName(), DamageApplied, CurrentHealth);
+	//UE_LOG(LogTemp, Error, TEXT("[C++] %s took %f damage. Current Health: %f"), *GetName(), DamageApplied, CurrentHealth);
 
 
 	if (CurrentHealth > 0.0f) {
@@ -61,5 +81,5 @@ void ABaseCharacter::Die()
 {
 	// 基本的な死亡処理はここに実装
 	// 継承先のクラスで具体的な処理を実装することを想定
-	UE_LOG(LogTemp, Warning, TEXT("%s has died."), *GetName());
+	//UE_LOG(LogTemp, Warning, TEXT("%s has died."), *GetName());
 }

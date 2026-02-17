@@ -6,6 +6,13 @@
 #include "GameFramework/Character.h"
 #include "BaseCharacter.generated.h"
 
+UENUM(BlueprintType)
+enum class EEnemyTeam :uint8
+{
+	Enemy   UMETA(DisplayName = "Enemy"),
+	Ally    UMETA(DisplayName = "Ally")
+};
+
 UCLASS()
 class REIBAIFIGHT_API ABaseCharacter : public ACharacter
 {
@@ -20,7 +27,7 @@ protected:
 	virtual void BeginPlay() override;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
-	float MaxHealth = 100.0f;
+	float MaxHealth = 1000.0f;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stats")
 	float CurrentHealth;
@@ -42,4 +49,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Stats")
 	float GetCurrentHealth() const { return CurrentHealth; }
+
+	//全キャラクターに所属するチームの札を持たせる(Enemy,Ally)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
+	EEnemyTeam TeamID;
+
 };
