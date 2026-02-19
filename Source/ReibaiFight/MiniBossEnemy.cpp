@@ -77,7 +77,6 @@ void AMiniBossEnemy::Die()
 {
     Super::Die();
     UE_LOG(LogTemp, Warning, TEXT("MiniBossEnemy Die() called!"));
-    SetLifeSpan(1.5f);
 }
 
 float AMiniBossEnemy::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)

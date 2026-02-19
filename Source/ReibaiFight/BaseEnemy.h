@@ -36,6 +36,12 @@ protected:
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<class AExperience> ExperienceParticleClass;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drop System")
+	TSubclassOf<AActor> ManjuClass;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drop System")
+	float ManjuDropChance = 0.3f;
+
 	//ìGÇÃçUåÇÉÇÅ[ÉVÉáÉìÇæÇØÇ«Ç¢ÇÁÇ»Ç¢Ç©Ç‡
 
 	UFUNCTION(BlueprintCallable, Category = "Combat")

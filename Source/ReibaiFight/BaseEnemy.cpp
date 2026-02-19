@@ -105,7 +105,7 @@ void ABaseEnemy::Die() {
     }
 
     //2.5fがアクタが消えるまでの秒数
-    SetLifeSpan(0.8f);
+    SetLifeSpan(2.0f);
 	FVector SpawnNiagaraLocation = GetActorLocation();
     if (DeathNiagaraSystem) // 事前にUPROPERTYで持たせておく
     {
@@ -120,6 +120,29 @@ void ABaseEnemy::Die() {
             ENCPoolMethod::None,
             true           // PreCull Check
         );
+    }
+
+    //ここを難易度に応じて変えるとよさげ
+    if(FMath::RandRange(0.0f, 1.0f) < ManjuDropChance) {
+        //エディタでセットしたまんじゅうクラスあるかを確認
+        UE_LOG(LogTemp, Warning, TEXT("Spawn   CHANCE！！！"));
+
+        if(ManjuClass){
+            FVector SpawnLocation = GetActorLocation();
+			FRotator SpawnRotation = FRotator::ZeroRotator;
+			FActorSpawnParameters SpawnParams;
+			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+			UE_LOG(LogTemp, Warning, TEXT("Spawn      Manju!!!!!!!!!!!!!!!!!!!"));
+            GetWorld()->SpawnActor<AActor>(ManjuClass, SpawnLocation, SpawnRotation, SpawnParams);
+        }
+        else {
+            UE_LOG(LogTemp, Warning, TEXT("ManjuClassGanaiyo！！！！！！！！！"));
+
+        }
+	}
+    else
+    {
+        UE_LOG(LogTemp, Warning, TEXT("Hazure!!!!!!!!!!!!!"));
     }
 }
 

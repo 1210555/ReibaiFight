@@ -23,7 +23,6 @@ void AWarriorBossEnemy::Tick(float DeltaTime)
 void AWarriorBossEnemy::Die()
 {
 	Super::Die();
-	SetLifeSpan(2.0f);
 	UE_LOG(LogTemp, Warning, TEXT("WarriorBossEnemy Die() called!"));
 
 }
