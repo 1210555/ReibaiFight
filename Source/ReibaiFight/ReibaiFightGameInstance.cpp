@@ -44,7 +44,7 @@ void UReibaiFightGameInstance::ResetRunData()
 float UReibaiFightGameInstance::CalculateDifficulty(int32 ManjuAmount)
 {
 	// 例：100個捧げるごとに 0.1倍 難しくなる（基本は1.0倍）
-	// 500個捧げたら -> 1.0 + 0.5 = 1.5倍
+	// 500個捧げたら -> 1.0 + 0.5 = 1.5倍。戻り値のレンジは1～11。
 	return 1.0f + (float)ManjuAmount / 1000.0f;
 }
 

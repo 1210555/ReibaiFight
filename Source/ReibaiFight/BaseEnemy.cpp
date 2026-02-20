@@ -10,6 +10,7 @@
 #include "Kismet/GameplayStatics.h"//GameStaticsのために必要
 #include "ReibaiFightCharacter.h"//AReibaiFightCharacterクラスを使うために必要
 #include "ReibaiFightBFL.h"//自作ライブラリ、ApplyRadialDamage関数を使うために必要
+#include "ReibaiFightGameInstance.h"//ゲームインスタンスを使うために必要
 #include "Experience.h"//AExperienceクラスを使うために必要
 #include "NiagaraFunctionLibrary.h"//Niagaraの関数ライブラリを使うために必要
 #include "NiagaraComponent.h"//NiagaraComponentを使うために必要
@@ -52,6 +53,8 @@ void ABaseEnemy::BeginPlay()
 		//カプセルコンポーネントがオーバーラップしたら'OnOverlapBegin'関数を呼び出すという登録をする
 		CapsuleComp->OnComponentBeginOverlap.AddDynamic(this, &ABaseEnemy::OnOverlapBegin);
 	}
+
+	MyGameInstance = Cast<UReibaiFightGameInstance>(UGameplayStatics::GetGameInstance(GetWorld()));
 }
 
 void ABaseEnemy::Tick(float DeltaTime)
@@ -123,23 +126,29 @@ void ABaseEnemy::Die() {
     }
 
     //ここを難易度に応じて変えるとよさげ
-    if(FMath::RandRange(0.0f, 1.0f) < ManjuDropChance) {
-        //エディタでセットしたまんじゅうクラスあるかを確認
-        UE_LOG(LogTemp, Warning, TEXT("Spawn   CHANCE！！！"));
+	float FinalManjuDropChance = BaseManjuDropChance;
+    if (MyGameInstance)
+    {
+			FinalManjuDropChance *= MyGameInstance->DifficultyMultiplier; // ゲームインスタンスから難易度倍率を取得してドロップ率に反映
+    }
 
-        if(ManjuClass){
-            FVector SpawnLocation = GetActorLocation();
-			FRotator SpawnRotation = FRotator::ZeroRotator;
-			FActorSpawnParameters SpawnParams;
-			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
-			UE_LOG(LogTemp, Warning, TEXT("Spawn      Manju!!!!!!!!!!!!!!!!!!!"));
-            GetWorld()->SpawnActor<AActor>(ManjuClass, SpawnLocation, SpawnRotation, SpawnParams);
-        }
-        else {
-            UE_LOG(LogTemp, Warning, TEXT("ManjuClassGanaiyo！！！！！！！！！"));
+    if (FMath::RandRange(0.0f, 1.0f) < FinalManjuDropChance) {
+            //エディタでセットしたまんじゅうクラスあるかを確認
+            UE_LOG(LogTemp, Warning, TEXT("Spawn　CHANCE！！！"));
 
-        }
-	}
+            if (ManjuClass) {
+                FVector SpawnLocation = GetActorLocation();
+                FRotator SpawnRotation = FRotator::ZeroRotator;
+                FActorSpawnParameters SpawnParams;
+                SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+                UE_LOG(LogTemp, Warning, TEXT("Spawn　Manju!!!!!!!!!!!!!!!!!!!"));
+                GetWorld()->SpawnActor<AActor>(ManjuClass, SpawnLocation, SpawnRotation, SpawnParams);
+            }
+            else {
+                UE_LOG(LogTemp, Warning, TEXT("ManjuClassGanaiyo！！！！！！！！！"));
+
+            }
+    }
     else
     {
         UE_LOG(LogTemp, Warning, TEXT("Hazure!!!!!!!!!!!!!"));
@@ -218,8 +227,8 @@ void ABaseEnemy::SpawnExperience() {
             }
         };
     // 第2引数 = 点数, 第3引数 = 大きさ倍率
-    SpawnLoop(BigExperienceCount, 100, 8.0f); // 大: 100点, 2倍
-    SpawnLoop(MiddleExperienceCount, 25, 4.0f); // 中:  25点, 1.2倍
+    SpawnLoop(BigExperienceCount, 100, 4.0f); // 大: 100点, 2倍
+    SpawnLoop(MiddleExperienceCount, 25, 2.0f); // 中:  25点, 1.2倍
     SpawnLoop(SmallExperienceCount, 5, 1.0f); // 小:   5点, 0.8倍
 }
 
@@ -290,18 +299,33 @@ void ABaseEnemy::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* Oth
     }
 }
 
-void ABaseEnemy::Activate(FVector SpawnLocation) {
-    SetActorLocation(SpawnLocation);
+void ABaseEnemy::ActivateEnemy(FVector SpawnLocation, FRotator SpawnRotation) {
+	SetActorLocationAndRotation(SpawnLocation, SpawnRotation);
     SetActorHiddenInGame(false);
     SetActorEnableCollision(true);
     SetActorTickEnabled(true);
-    // 体力を最大に回復
+    //体力を最大に回復
     CurrentHealth = MaxHealth;
     bIsDead = false;
+    
+    if(GetCharacterMovement()) {
+		GetCharacterMovement()->Velocity = FVector::ZeroVector; // 速度をリセット
+        GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Walking);
+	}
 }
 
-void ABaseEnemy::Deactivate() {
+void ABaseEnemy::DeactivateEnemy() {
     SetActorHiddenInGame(true);
     SetActorEnableCollision(false);
     SetActorTickEnabled(false);
+    bIsDead = true;
+
+    if (GetCharacterMovement())
+    {
+        GetCharacterMovement()->StopMovementImmediately();
+    }
+}
+
+bool ABaseEnemy::IsDead() const {
+    return bIsDead;
 }

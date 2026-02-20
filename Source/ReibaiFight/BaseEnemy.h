@@ -18,9 +18,10 @@
 //	Ally    UMETA(DisplayName = "Ally")
 //};
 
- //AEXperiecneの前方宣言。インクルードせずにExperienceクラスを使用できる
+ //前方宣言。インクルードせずにクラスを使用できる
 class AExperiecne;
 class UBehaviorTree;
+class UReibaiFightGameInstance;
 
 UCLASS()
 class REIBAIFIGHT_API ABaseEnemy : public ABaseCharacter
@@ -40,7 +41,10 @@ protected:
 	TSubclassOf<AActor> ManjuClass;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drop System")
-	float ManjuDropChance = 0.3f;
+	float BaseManjuDropChance = 0.09f;
+
+	UPROPERTY()
+	UReibaiFightGameInstance* MyGameInstance;
 
 	//敵の攻撃モーションだけどいらないかも
 
@@ -76,12 +80,6 @@ protected:
 	// 経験値アイテムをスポーンさせる関数
 	void SpawnExperience();
 
-	UFUNCTION(BlueprintCallable,Category="Spawn")
-	void Activate(FVector SpawnLocation);
-
-	UFUNCTION(BlueprintCallable, Category = "Spawn")
-	void Deactivate();
-
 	UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="Stats")
 	bool bIsDead = false;
 
@@ -116,4 +114,12 @@ public:
 	//敵がどのビヘイビアツリーを使うかを設定するための変数
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI")
 	UBehaviorTree* EnemyBehaviorTree;
+
+	void ActivateEnemy(FVector SpawnLocation, FRotator SpawnRotation);
+
+	UFUNCTION(BlueprintCallable, Category = "Spawn")
+	void DeactivateEnemy();
+
+	//bool型の関数で、敵が死んでいるかを返す。constをつけることで呼び出し先(EnemyPoolManager)で結果を書き換えないことを明記する
+	bool IsDead() const { return bIsDead; }
 };

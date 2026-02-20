@@ -31,7 +31,7 @@ void AExperience::Tick(float DeltaTime)
 		float CurrentDistance = CurrentHomingSpeed * DeltaTime;
 
 		// 進行度合いを更新
-		CurrentAlpha = CurrentDistance / TotalPathLength;
+		CurrentAlpha += CurrentDistance / TotalPathLength;
 		// 進行度合い (0.0 ～ 1.0) を計算
 		// Clampを使って1.0を超えないようにする
 		float Alpha = FMath::Clamp(CurrentAlpha, 0.0f, 1.0f);
