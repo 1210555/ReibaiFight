@@ -8,8 +8,11 @@ void UEnemyHealthWidget::UpdateHealthBar(float Percent)
 {
 	if (EnemyHealthBar)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("敵の体力バー更新！UEnemyHealthWidgetクラス"));
+		UE_LOG(LogTemp, Warning, TEXT("Succeeded Update！ 現在のPercent: %f"), Percent);
 
 		EnemyHealthBar->SetPercent(Percent);
+	}
+	else {
+		UE_LOG(LogTemp, Warning, TEXT("Not Found Enemy HealthWidget！"));
 	}
 }

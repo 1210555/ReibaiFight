@@ -14,7 +14,7 @@ void UReibaiFightGameInstance::Init()
 {
 	Super::Init();
 	//ここでセーブデータからTotalManjuをロードする処理を入れる
-	TotalManju = 5000;//テスト用に5000にしてる
+	TotalManju = 100000;//テスト用に5000にしてる
 }
 
 void UReibaiFightGameInstance::AddManju(int32 Amount)

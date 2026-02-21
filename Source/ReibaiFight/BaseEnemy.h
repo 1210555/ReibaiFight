@@ -121,5 +121,5 @@ public:
 	void DeactivateEnemy();
 
 	//bool型の関数で、敵が死んでいるかを返す。constをつけることで呼び出し先(EnemyPoolManager)で結果を書き換えないことを明記する
-	bool IsDead() const { return bIsDead; }
+	bool IsDead() const;
 };

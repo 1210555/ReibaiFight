@@ -27,12 +27,12 @@ void AEnemyPoolManager::BeginPlay()
 	//指定された数だけ敵をスポーンして、プールに追加する。
 	for(int32 i=0; i < PoolSize; i++)
 	{
-		//とりあえず
+		//とりあえずスポーンさせて、これを以下でDeactivateする。
 		ABaseEnemy* NewEnemy = GetWorld()->SpawnActor<ABaseEnemy>(EnemyClass, FVector::ZeroVector, FRotator::ZeroRotator);
 		
 		if (NewEnemy) {
-			// ★後で ABaseEnemy に実装する「おやすみモード」にする関数を呼ぶ
-			/*NewEnemy->DeactivateEnemy();*/
+			//スポーンしたものを非アクティブにする。これでプールに入れる。
+			NewEnemy->DeactivateEnemy();
 
 			// 配列に追加
 			EnemyPool.Add(NewEnemy);

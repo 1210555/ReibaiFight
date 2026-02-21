@@ -107,8 +107,6 @@ void ABaseEnemy::Die() {
         AnimInstance->Montage_Play(DeathMontage);
     }
 
-    //2.5fがアクタが消えるまでの秒数
-    SetLifeSpan(2.0f);
 	FVector SpawnNiagaraLocation = GetActorLocation();
     if (DeathNiagaraSystem) // 事前にUPROPERTYで持たせておく
     {
@@ -125,7 +123,6 @@ void ABaseEnemy::Die() {
         );
     }
 
-    //ここを難易度に応じて変えるとよさげ
 	float FinalManjuDropChance = BaseManjuDropChance;
     if (MyGameInstance)
     {
@@ -136,23 +133,19 @@ void ABaseEnemy::Die() {
             //エディタでセットしたまんじゅうクラスあるかを確認
             UE_LOG(LogTemp, Warning, TEXT("Spawn　CHANCE！！！"));
 
-            if (ManjuClass) {
-                FVector SpawnLocation = GetActorLocation();
-                FRotator SpawnRotation = FRotator::ZeroRotator;
-                FActorSpawnParameters SpawnParams;
-                SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
-                UE_LOG(LogTemp, Warning, TEXT("Spawn　Manju!!!!!!!!!!!!!!!!!!!"));
-                GetWorld()->SpawnActor<AActor>(ManjuClass, SpawnLocation, SpawnRotation, SpawnParams);
-            }
-            else {
-                UE_LOG(LogTemp, Warning, TEXT("ManjuClassGanaiyo！！！！！！！！！"));
+        if (ManjuClass) {
+            FVector SpawnLocation = GetActorLocation();
+            FRotator SpawnRotation = FRotator::ZeroRotator;
+            FActorSpawnParameters SpawnParams;
+            SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+            UE_LOG(LogTemp, Warning, TEXT("Spawn　Manju!!!!!!!!!!!!!!!!!!!"));
+            GetWorld()->SpawnActor<AActor>(ManjuClass, SpawnLocation, SpawnRotation, SpawnParams);
+        }
+    }
 
-            }
-    }
-    else
-    {
-        UE_LOG(LogTemp, Warning, TEXT("Hazure!!!!!!!!!!!!!"));
-    }
+    //見えなくして、当たり判定も消す。デストロイアクタするわけではない
+    FTimerHandle DeactivateTimer;//Fがついてるから構造体。同じく構造体であるFVectorなどと同じように記述できる
+    GetWorldTimerManager().SetTimer(DeactivateTimer, this, &ABaseEnemy::DeactivateEnemy, 2.0f, false);
 }
 
 void ABaseEnemy::ConvertToAlly() {
@@ -261,14 +254,22 @@ float ABaseEnemy::TakeDamage(float DamageAmount, struct FDamageEvent const& Dama
 	//もし敵が仲間になっていたら、体力の更新をUIに伝える
     if (TeamID == EEnemyTeam::Ally) {
         // 0除算防止
-        if (MaxHealth <= 0.f) {
+        UE_LOG(LogTemp, Warning, TEXT("BaseEnemyのTakeDamageのAllyのとき！！！！！！！！！！！"));
+
+        if (MaxHealth != 0.f) {
+            UE_LOG(LogTemp, Warning, TEXT("BaseEnemyのTakeDamageのAlly not 0 MaxHealth"));
+
             float Percent = CurrentHealth / MaxHealth;
 
             //体力バーなかったら以下スキップ
             if (AllyHealthWidgetComp) {
+                UE_LOG(LogTemp, Warning, TEXT("BaseEnemyのTakeDamageのAlly have Ally Health Widget"));
+
                 UUserWidget* UserWidget = AllyHealthWidgetComp->GetUserWidgetObject();
                 UEnemyHealthWidget* EnemyHealthWidget = Cast<UEnemyHealthWidget>(UserWidget);
                 if (EnemyHealthWidget) {
+                    UE_LOG(LogTemp, Warning, TEXT("Ally Update EnemyHealth"));
+
                     EnemyHealthWidget->UpdateHealthBar(Percent);
                 }
             }
@@ -286,7 +287,7 @@ void ABaseEnemy::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* Oth
     ABaseCharacter* TargetCharacter = Cast<ABaseCharacter>(OtherActor);
 
 	//HP増減などをもつBaseCharacterクラスであり、かつReibaiFightCharacterクラスであるか確認
-    if (TargetCharacter && TargetCharacter->IsA(AReibaiFightCharacter::StaticClass()))
+    if (TargetCharacter && TargetCharacter->TeamID != this->TeamID)
     {
         // ダメージを与える
         UGameplayStatics::ApplyDamage(
@@ -300,26 +301,51 @@ void ABaseEnemy::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* Oth
 }
 
 void ABaseEnemy::ActivateEnemy(FVector SpawnLocation, FRotator SpawnRotation) {
+
+    if (USkeletalMeshComponent* MeshComp = GetMesh())
+    {
+        if (UAnimInstance* AnimInstance = MeshComp->GetAnimInstance())
+        {
+            // 再生中のモンタージュ（死亡アニメーション等）を0秒で強制停止する
+            AnimInstance->StopAllMontages(0.0f);
+        }
+    }
+    //敵に戻るときに必要。陣営をEnemyに戻し、体力バーも非表示
+    TeamID = EEnemyTeam::Enemy;
+    AllyHealthWidgetComp->SetVisibility(false);
+
+    CurrentHealth = MaxHealth;
+    bIsDead = false;
+
 	SetActorLocationAndRotation(SpawnLocation, SpawnRotation);
     SetActorHiddenInGame(false);
     SetActorEnableCollision(true);
     SetActorTickEnabled(true);
     //体力を最大に回復
-    CurrentHealth = MaxHealth;
-    bIsDead = false;
+
     
     if(GetCharacterMovement()) {
 		GetCharacterMovement()->Velocity = FVector::ZeroVector; // 速度をリセット
         GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Walking);
 	}
+
+    if (AAIController* AIController = Cast<AAIController>(GetController()))
+    {
+        if (UBrainComponent* BrainComp = AIController->GetBrainComponent())
+        {
+            //StopLogic("Dead") で止めた思考を、再度最初から実行させる
+            BrainComp->RestartLogic();
+        }
+    }
 }
 
 void ABaseEnemy::DeactivateEnemy() {
-    SetActorHiddenInGame(true);
-    SetActorEnableCollision(false);
-    SetActorTickEnabled(false);
-    bIsDead = true;
+    SetActorHiddenInGame(true);//隠す
+    SetActorEnableCollision(false);//コリジョンを消す
+    SetActorTickEnabled(false);//Tickを消す
+    bIsDead = true;//死亡させる
 
+    //移動速度を0にしておく。これしとかないとActivateEnemyしたときに移動速度が残ったままになる。
     if (GetCharacterMovement())
     {
         GetCharacterMovement()->StopMovementImmediately();

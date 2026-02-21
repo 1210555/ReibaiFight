@@ -64,10 +64,6 @@ float ABaseCharacter::TakeDamage(float DamageAmount, FDamageEvent const& DamageE
 	//まず親クラスのTakeDamageを呼び出して、最終的なダメージ量を計算してもらう (重要！)
 	float DamageApplied = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 
-
-	//UE_LOG(LogTemp, Error, TEXT("[C++] %s took %f damage. Current Health: %f"), *GetName(), DamageApplied, CurrentHealth);
-
-
 	if (CurrentHealth > 0.0f) {
 
 		CurrentHealth -= DamageApplied;
