@@ -99,6 +99,15 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
 	UBehaviorTree* AllyBehaviorTree;
 
+	//“G‚ğ–¡•û‚É•Ï‚¦‚é‚±‚Æ‚ª‚«‚é‚©‚ğ”»’è‚·‚éBÀÛ‚Ì–¡•û‚É‚·‚éˆ—‚ÍConvertToAlly‚Ås‚¤
+	bool TryConvertToAlly();
+
+	void DisableAIAndCoollision();
+
+	void DeathEffects();
+
+	void TryDropManju();
+
 public:
 	ABaseEnemy();
 

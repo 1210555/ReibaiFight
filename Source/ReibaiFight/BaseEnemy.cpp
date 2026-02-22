@@ -62,37 +62,45 @@ void ABaseEnemy::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 }
 
-void ABaseEnemy::Die() {
+void ABaseEnemy::Die()
+{
     
-    if (TeamID == EEnemyTeam::Enemy) {
-		ACharacter* PlayerCharacter = UGameplayStatics::GetPlayerCharacter(GetWorld(), 0);
-		AReibaiFightCharacter* ReibaiFightCharacter = Cast<AReibaiFightCharacter>(PlayerCharacter);
+  //  if (TeamID == EEnemyTeam::Enemy) {
+		//ACharacter* PlayerCharacter = UGameplayStatics::GetPlayerCharacter(GetWorld(), 0);
+		//AReibaiFightCharacter* ReibaiFightCharacter = Cast<AReibaiFightCharacter>(PlayerCharacter);
 
-        //キャスト成功かチェック
-        if (ReibaiFightCharacter) {
-			//敵を仲間にするチャンスがあるかチェック
-            if (ReibaiFightCharacter->AllyChance > 0) {
-                ConvertToAlly();
-                ReibaiFightCharacter->AllyChance--;
-                
-				return; //仲間になったときは以降の死亡処理を行わない
-            }
-        }
+  //      //キャスト成功かチェック
+  //      if (ReibaiFightCharacter) {
+		//	//敵を仲間にするチャンスがあるかチェック
+  //          if (ReibaiFightCharacter->AllyChance > 0) {
+  //              ConvertToAlly();
+  //              ReibaiFightCharacter->AllyChance--;
+  //              
+		//		return; //仲間になったときは以降の死亡処理を行わない
+  //          }
+  //      }
+  //  }
+
+	//敵を仲間にする処理をTryConvertToAlly関数にまとめる
+    if (TryConvertToAlly()) {
+		return; //仲間になったときは以降の死亡処理を行わない
     }
 
-    AAIController* AIController = Cast<AAIController>(GetController());
-    UBrainComponent* BrainComp = AIController->GetBrainComponent();
-    if (AIController&&BrainComp)
-    {
-        if (BrainComp) {
-            // AIの思考を停止させる
-            BrainComp->StopLogic("Dead");
-        }
-    }
+ //   AAIController* AIController = Cast<AAIController>(GetController());
+ //   UBrainComponent* BrainComp = AIController->GetBrainComponent();
+ //   if (AIController&&BrainComp)
+ //   {
+ //       if (BrainComp) {
+ //           // AIの思考を停止させる
+ //           BrainComp->StopLogic("Dead");
+ //       }
+ //   }
 
-    // 当たり判定を消して、他のキャラクターの邪魔にならないようにする
-	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);//当たり判定を無効化
-	GetCharacterMovement()->DisableMovement();//移動を無効化
+ //   // 当たり判定を消して、他のキャラクターの邪魔にならないようにする
+	//GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);//当たり判定を無効化
+	//GetCharacterMovement()->DisableMovement();//移動を無効化
+
+	DisableAIAndCoollision();
 
     // 経験値アイテムドロップの処理
     if (ExperienceParticleClass)
@@ -100,52 +108,77 @@ void ABaseEnemy::Die() {
 		SpawnExperience();
     }
 
-	//死亡アニメーションを再生
-    UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-    if (AnimInstance && DeathMontage)
-    {
-        AnimInstance->Montage_Play(DeathMontage);
-    }
+	////死亡アニメーションを再生
+ //   UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+ //   if (AnimInstance && DeathMontage)
+ //   {
+ //       AnimInstance->Montage_Play(DeathMontage);
+ //   }
 
-	FVector SpawnNiagaraLocation = GetActorLocation();
-    if (DeathNiagaraSystem) // 事前にUPROPERTYで持たせておく
-    {
-        UNiagaraFunctionLibrary::SpawnSystemAtLocation(
-            this,
-            DeathNiagaraSystem,
-            SpawnNiagaraLocation,
-            FRotator::ZeroRotator,
-            FVector(1.0f), // スケール
-            true,          // Auto Destroy（再生終わったら消えるか）
-            true,          // Auto Activate
-            ENCPoolMethod::None,
-            true           // PreCull Check
-        );
-    }
+ //   //死亡時のナイアガラエフェクト再生
+	//FVector SpawnNiagaraLocation = GetActorLocation();
+ //   if (DeathNiagaraSystem) // 事前にUPROPERTYで持たせておく
+ //   {
+ //       UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+ //           this,
+ //           DeathNiagaraSystem,
+ //           SpawnNiagaraLocation,
+ //           FRotator::ZeroRotator,
+ //           FVector(1.0f), // スケール
+ //           true,          // Auto Destroy（再生終わったら消えるか）
+ //           true,          // Auto Activate
+ //           ENCPoolMethod::None,
+ //           true           // PreCull Check
+ //       );
+ //   }
 
-	float FinalManjuDropChance = BaseManjuDropChance;
-    if (MyGameInstance)
-    {
-			FinalManjuDropChance *= MyGameInstance->DifficultyMultiplier; // ゲームインスタンスから難易度倍率を取得してドロップ率に反映
-    }
+	DeathEffects();
 
-    if (FMath::RandRange(0.0f, 1.0f) < FinalManjuDropChance) {
-            //エディタでセットしたまんじゅうクラスあるかを確認
-            UE_LOG(LogTemp, Warning, TEXT("Spawn　CHANCE！！！"));
+	//float FinalManjuDropChance = BaseManjuDropChance;
+ //   if (MyGameInstance)
+ //   {
+	//		FinalManjuDropChance *= MyGameInstance->DifficultyMultiplier; // ゲームインスタンスから難易度倍率を取得してドロップ率に反映
+ //   }
 
-        if (ManjuClass) {
-            FVector SpawnLocation = GetActorLocation();
-            FRotator SpawnRotation = FRotator::ZeroRotator;
-            FActorSpawnParameters SpawnParams;
-            SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
-            UE_LOG(LogTemp, Warning, TEXT("Spawn　Manju!!!!!!!!!!!!!!!!!!!"));
-            GetWorld()->SpawnActor<AActor>(ManjuClass, SpawnLocation, SpawnRotation, SpawnParams);
-        }
-    }
+ //   if (FMath::RandRange(0.0f, 1.0f) < FinalManjuDropChance) {
+ //           //エディタでセットしたまんじゅうクラスあるかを確認
+ //           UE_LOG(LogTemp, Warning, TEXT("Spawn　CHANCE！！！"));
+
+ //       if (ManjuClass) {
+ //           FVector SpawnLocation = GetActorLocation();
+ //           FRotator SpawnRotation = FRotator::ZeroRotator;
+ //           FActorSpawnParameters SpawnParams;
+ //           SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+ //           UE_LOG(LogTemp, Warning, TEXT("Spawn　Manju!!!!!!!!!!!!!!!!!!!"));
+ //           GetWorld()->SpawnActor<AActor>(ManjuClass, SpawnLocation, SpawnRotation, SpawnParams);
+ //       }
+ //   }
+
+	TryDropManju();
 
     //見えなくして、当たり判定も消す。デストロイアクタするわけではない
     FTimerHandle DeactivateTimer;//Fがついてるから構造体。同じく構造体であるFVectorなどと同じように記述できる
     GetWorldTimerManager().SetTimer(DeactivateTimer, this, &ABaseEnemy::DeactivateEnemy, 2.0f, false);
+}
+
+bool ABaseEnemy::TryConvertToAlly()
+{
+    if (TeamID == EEnemyTeam::Enemy) {
+        ACharacter* PlayerCharacter = UGameplayStatics::GetPlayerCharacter(GetWorld(), 0);
+        AReibaiFightCharacter* ReibaiFightCharacter = Cast<AReibaiFightCharacter>(PlayerCharacter);
+
+        //キャスト成功かチェック
+        if (ReibaiFightCharacter) {
+            //敵を仲間にするチャンスがあるかチェック
+            if (ReibaiFightCharacter->AllyChance > 0) {
+                ConvertToAlly();
+                ReibaiFightCharacter->AllyChance--;
+
+                return true; //仲間になったときは以降の死亡処理を行わない
+            }
+        }
+    }
+    return false;
 }
 
 void ABaseEnemy::ConvertToAlly() {
@@ -157,7 +190,7 @@ void ABaseEnemy::ConvertToAlly() {
 	AAIController* AllyAI = Cast<AAIController>(GetController());
     if (AllyAI && AllyBehaviorTree)
     {
-		float SerarchRadius = 5000.0f;
+		float SerarchRadius = 3000.0f;
         ABaseCharacter* PlayerCharacter = UReibaiFightBFL::GetNearestEnemy(
             this,
 			GetActorLocation(),
@@ -177,6 +210,21 @@ void ABaseEnemy::ConvertToAlly() {
 			);
         }
     }
+}
+
+void ABaseEnemy::DisableAIAndCoollision() {
+    AAIController* AIController = Cast<AAIController>(GetController());
+    UBrainComponent* BrainComp = AIController->GetBrainComponent();
+    if (AIController && BrainComp)
+    {
+        if (BrainComp) {
+            // AIの思考を停止させる
+            BrainComp->StopLogic("Dead");
+        }
+    }
+    // 当たり判定を消して、他のキャラクターの邪魔にならないようにする
+    GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);//当たり判定を無効化
+    GetCharacterMovement()->DisableMovement();//移動を無効化
 }
 
 void ABaseEnemy::SpawnExperience() {
@@ -223,6 +271,51 @@ void ABaseEnemy::SpawnExperience() {
     SpawnLoop(BigExperienceCount, 100, 4.0f); // 大: 100点, 2倍
     SpawnLoop(MiddleExperienceCount, 25, 2.0f); // 中:  25点, 1.2倍
     SpawnLoop(SmallExperienceCount, 5, 1.0f); // 小:   5点, 0.8倍
+}
+
+void ABaseEnemy::DeathEffects() {
+    //死亡アニメーションを再生
+    UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+    if (AnimInstance && DeathMontage)
+    {
+        AnimInstance->Montage_Play(DeathMontage);
+    }
+    //死亡時のナイアガラエフェクト再生
+    FVector SpawnNiagaraLocation = GetActorLocation();
+    if (DeathNiagaraSystem) // 事前にUPROPERTYで持たせておく
+    {
+        UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+            this,
+            DeathNiagaraSystem,
+            SpawnNiagaraLocation,
+            FRotator::ZeroRotator,
+            FVector(1.0f), // スケール
+            true,          // Auto Destroy（再生終わったら消えるか）
+            true,          // Auto Activate
+            ENCPoolMethod::None,
+            true           // PreCull Check
+        );
+    }
+}
+
+void ABaseEnemy::TryDropManju() {
+    float FinalManjuDropChance = BaseManjuDropChance;
+    if (MyGameInstance)
+    {
+        FinalManjuDropChance *= MyGameInstance->DifficultyMultiplier; // ゲームインスタンスから難易度倍率を取得してドロップ率に反映
+    }
+    if (FMath::RandRange(0.0f, 1.0f) < FinalManjuDropChance) {
+        //エディタでセットしたまんじゅうクラスあるかを確認
+        UE_LOG(LogTemp, Warning, TEXT("Spawn　CHANCE！！！"));
+        if (ManjuClass) {
+            FVector SpawnLocation = GetActorLocation();
+            FRotator SpawnRotation = FRotator::ZeroRotator;
+            FActorSpawnParameters SpawnParams;
+            SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+            UE_LOG(LogTemp, Warning, TEXT("Spawn　Manju!!!!!!!!!!!!!!!!!!!"));
+            GetWorld()->SpawnActor<AActor>(ManjuClass, SpawnLocation, SpawnRotation, SpawnParams);
+        }
+    }
 }
 
 void ABaseEnemy::AttackHitCheck(float DamageAmout) {
