@@ -3,7 +3,6 @@
 #include "Animation/AnimInstance.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
-//#include "EnemySpirit.h" // 敵クラスのヘッダー
 #include "NiagaraFunctionLibrary.h"
 #include "ReibaiFightBFL.h"
 
@@ -87,5 +86,4 @@ void UAutoSlashAttack::Upgrade(const FUpgradeData& UpgradeData)
 		this->SlashEffect = UpgradeData.NewNiagaraEffect;
 		UE_LOG(LogTemp, Warning, TEXT("Attack Effect Upgraded! %s"), *UpgradeData.NewNiagaraEffect->GetName());
 	}
-
 }

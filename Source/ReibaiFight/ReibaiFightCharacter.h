@@ -67,15 +67,15 @@ public:
 
 	//体力が更新された時にブループリント側で呼び出されるイベント
 	//これによりイベント駆動型への移行
-	UFUNCTION(BlueprintImplementableEvent, Category = "Health")
+	UFUNCTION(BlueprintImplementableEvent, Category = "UI")
 	void OnHealthUpdated(float Current, float Max);
 
 	//Expの更新をブループリント側で呼び出すイベント
-	UFUNCTION(BlueprintImplementableEvent, Category = "Health")
+	UFUNCTION(BlueprintImplementableEvent, Category = "UI")
 	void OnExperienceUpdated(int32 CurrentXPAmount, int32 NextXPAmount);
 
 	//レベルの更新をブループリント側で呼び出すイベント
-	UFUNCTION(BlueprintImplementableEvent, Category = "Levelup")
+	UFUNCTION(BlueprintImplementableEvent, Category = "UI")
 	void OnCurrentLevelUpdated(int32 NewLevel);
 
 protected:
@@ -117,10 +117,10 @@ protected:
 	FTimerHandle AutoAttackTimerHandle;
 
 	// EnableAutoAttack() の代わりに、タイマーを開始する専用の関数を用意
-	void StartAutoAttackTimer();
+	//void StartAutoAttackTimer();
 
 	/** タイマーによって定期的に呼び出される関数 */
-	void TriggerAutoAttack();
+	//void TriggerAutoAttack();
 
 	//ゲームオーバーに表示するUIのブループリントクラス
 	UPROPERTY(EditAnywhere, Category="UI")

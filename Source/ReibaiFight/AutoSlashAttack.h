@@ -12,7 +12,7 @@ class REIBAIFIGHT_API UAutoSlashAttack : public UAttackComponentBase
 
 public:
 	// eƒNƒ‰ƒX‚ÌPerformAttackŠÖ”‚ğã‘‚«‚µ‚Ü‚·
-	virtual void PerformAttack() override;
+	void PerformAttack() override;
 
 protected:
 

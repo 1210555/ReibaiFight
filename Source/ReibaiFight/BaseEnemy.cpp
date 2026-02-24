@@ -18,7 +18,7 @@
 ABaseEnemy::ABaseEnemy()
 {
     OverlapEnemyDamage = 5.0f;
-	//PrimaryActorTick.bCanEverTick = true;
+
 	TeamID = EEnemyTeam::Enemy;
 
 	// UWidgetComponent型のAllyHealthWidgetという名前のパーツを作成。以下,AllyHealthWidgetCompという変数名でアクセス可能 
@@ -64,42 +64,13 @@ void ABaseEnemy::Tick(float DeltaTime)
 
 void ABaseEnemy::Die()
 {
-    
-  //  if (TeamID == EEnemyTeam::Enemy) {
-		//ACharacter* PlayerCharacter = UGameplayStatics::GetPlayerCharacter(GetWorld(), 0);
-		//AReibaiFightCharacter* ReibaiFightCharacter = Cast<AReibaiFightCharacter>(PlayerCharacter);
-
-  //      //キャスト成功かチェック
-  //      if (ReibaiFightCharacter) {
-		//	//敵を仲間にするチャンスがあるかチェック
-  //          if (ReibaiFightCharacter->AllyChance > 0) {
-  //              ConvertToAlly();
-  //              ReibaiFightCharacter->AllyChance--;
-  //              
-		//		return; //仲間になったときは以降の死亡処理を行わない
-  //          }
-  //      }
-  //  }
 
 	//敵を仲間にする処理をTryConvertToAlly関数にまとめる
     if (TryConvertToAlly()) {
 		return; //仲間になったときは以降の死亡処理を行わない
     }
 
- //   AAIController* AIController = Cast<AAIController>(GetController());
- //   UBrainComponent* BrainComp = AIController->GetBrainComponent();
- //   if (AIController&&BrainComp)
- //   {
- //       if (BrainComp) {
- //           // AIの思考を停止させる
- //           BrainComp->StopLogic("Dead");
- //       }
- //   }
-
- //   // 当たり判定を消して、他のキャラクターの邪魔にならないようにする
-	//GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);//当たり判定を無効化
-	//GetCharacterMovement()->DisableMovement();//移動を無効化
-
+	//AIを停止させ、当たり判定を消す
 	DisableAIAndCoollision();
 
     // 経験値アイテムドロップの処理
@@ -108,52 +79,10 @@ void ABaseEnemy::Die()
 		SpawnExperience();
     }
 
-	////死亡アニメーションを再生
- //   UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
- //   if (AnimInstance && DeathMontage)
- //   {
- //       AnimInstance->Montage_Play(DeathMontage);
- //   }
-
- //   //死亡時のナイアガラエフェクト再生
-	//FVector SpawnNiagaraLocation = GetActorLocation();
- //   if (DeathNiagaraSystem) // 事前にUPROPERTYで持たせておく
- //   {
- //       UNiagaraFunctionLibrary::SpawnSystemAtLocation(
- //           this,
- //           DeathNiagaraSystem,
- //           SpawnNiagaraLocation,
- //           FRotator::ZeroRotator,
- //           FVector(1.0f), // スケール
- //           true,          // Auto Destroy（再生終わったら消えるか）
- //           true,          // Auto Activate
- //           ENCPoolMethod::None,
- //           true           // PreCull Check
- //       );
- //   }
-
+	//死亡時のアニメーションとナイアガラの再生
 	DeathEffects();
 
-	//float FinalManjuDropChance = BaseManjuDropChance;
- //   if (MyGameInstance)
- //   {
-	//		FinalManjuDropChance *= MyGameInstance->DifficultyMultiplier; // ゲームインスタンスから難易度倍率を取得してドロップ率に反映
- //   }
-
- //   if (FMath::RandRange(0.0f, 1.0f) < FinalManjuDropChance) {
- //           //エディタでセットしたまんじゅうクラスあるかを確認
- //           UE_LOG(LogTemp, Warning, TEXT("Spawn　CHANCE！！！"));
-
- //       if (ManjuClass) {
- //           FVector SpawnLocation = GetActorLocation();
- //           FRotator SpawnRotation = FRotator::ZeroRotator;
- //           FActorSpawnParameters SpawnParams;
- //           SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
- //           UE_LOG(LogTemp, Warning, TEXT("Spawn　Manju!!!!!!!!!!!!!!!!!!!"));
- //           GetWorld()->SpawnActor<AActor>(ManjuClass, SpawnLocation, SpawnRotation, SpawnParams);
- //       }
- //   }
-
+	//まんじゅうドロップの処理
 	TryDropManju();
 
     //見えなくして、当たり判定も消す。デストロイアクタするわけではない
@@ -185,7 +114,6 @@ void ABaseEnemy::ConvertToAlly() {
     TeamID = EEnemyTeam::Ally;
     CurrentHealth = MaxHealth;
 	AllyHealthWidgetComp->SetVisibility(true);
-    UE_LOG(LogTemp, Warning, TEXT("ConvertToAllyが呼ばれました!!!!!!!!!!!!!!!!!!!"));
 
 	AAIController* AllyAI = Cast<AAIController>(GetController());
     if (AllyAI && AllyBehaviorTree)
@@ -306,13 +234,11 @@ void ABaseEnemy::TryDropManju() {
     }
     if (FMath::RandRange(0.0f, 1.0f) < FinalManjuDropChance) {
         //エディタでセットしたまんじゅうクラスあるかを確認
-        UE_LOG(LogTemp, Warning, TEXT("Spawn　CHANCE！！！"));
         if (ManjuClass) {
             FVector SpawnLocation = GetActorLocation();
             FRotator SpawnRotation = FRotator::ZeroRotator;
             FActorSpawnParameters SpawnParams;
             SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
-            UE_LOG(LogTemp, Warning, TEXT("Spawn　Manju!!!!!!!!!!!!!!!!!!!"));
             GetWorld()->SpawnActor<AActor>(ManjuClass, SpawnLocation, SpawnRotation, SpawnParams);
         }
     }
@@ -332,8 +258,7 @@ float ABaseEnemy::TakeDamage(float DamageAmount, struct FDamageEvent const& Dama
     //TakeDamageの戻り値は食らったダメージ量
 	const float ActualDamage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 
-    UE_LOG(LogTemp, Warning, TEXT("BaseEnemyのTakeDamageが呼ばれました"));
-
+	UE_LOG(LogTemp, Warning, TEXT("Damage Causer is %s"), *DamageCauser->GetName());//*がないとFString型で%sの文字列型式に変換できないからエラーになる
     //体力が0以下になったら死亡時のアニメーション
     if (CurrentHealth <= 0.0f) {
         Die();
@@ -347,21 +272,17 @@ float ABaseEnemy::TakeDamage(float DamageAmount, struct FDamageEvent const& Dama
 	//もし敵が仲間になっていたら、体力の更新をUIに伝える
     if (TeamID == EEnemyTeam::Ally) {
         // 0除算防止
-        UE_LOG(LogTemp, Warning, TEXT("BaseEnemyのTakeDamageのAllyのとき！！！！！！！！！！！"));
 
         if (MaxHealth != 0.f) {
-            UE_LOG(LogTemp, Warning, TEXT("BaseEnemyのTakeDamageのAlly not 0 MaxHealth"));
 
             float Percent = CurrentHealth / MaxHealth;
 
             //体力バーなかったら以下スキップ
             if (AllyHealthWidgetComp) {
-                UE_LOG(LogTemp, Warning, TEXT("BaseEnemyのTakeDamageのAlly have Ally Health Widget"));
 
                 UUserWidget* UserWidget = AllyHealthWidgetComp->GetUserWidgetObject();
                 UEnemyHealthWidget* EnemyHealthWidget = Cast<UEnemyHealthWidget>(UserWidget);
                 if (EnemyHealthWidget) {
-                    UE_LOG(LogTemp, Warning, TEXT("Ally Update EnemyHealth"));
 
                     EnemyHealthWidget->UpdateHealthBar(Percent);
                 }

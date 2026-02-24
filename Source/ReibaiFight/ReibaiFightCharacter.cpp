@@ -92,7 +92,7 @@ void AReibaiFightCharacter::BeginPlay()
 	if (HitodamaClass)
 	{
 		// 例えば 10個 予備を作っておく
-		int32 PoolSize = 10;
+		int32 PoolSize = 3;
 
 		for (int32 i = 0; i < PoolSize; i++)
 		{
@@ -315,37 +315,37 @@ void AReibaiFightCharacter::Die()
 	DisableInput(PlayerController); // プレイヤーの入力を無効化
 }
 
-void AReibaiFightCharacter::StartAutoAttackTimer()
-{
-	// 既にタイマーが動いている場合は何もしない
-	if (GetWorld()->GetTimerManager().IsTimerActive(AutoAttackTimerHandle))
-	{
-		return;
-	}
-
-	//UE_LOG(LogTemp, Warning, TEXT("Auto Attack Timer Started!"));
-	GetWorld()->GetTimerManager().SetTimer(
-		AutoAttackTimerHandle,
-		this,
-		&AReibaiFightCharacter::TriggerAutoAttack,
-		2.0f, // 2秒ごとに実行 (この間隔は後で調整可能)
-		true  // 繰り返し
-	);
-}
+//void AReibaiFightCharacter::StartAutoAttackTimer()
+//{
+//	// 既にタイマーが動いている場合は何もしない
+//	if (GetWorld()->GetTimerManager().IsTimerActive(AutoAttackTimerHandle))
+//	{
+//		return;
+//	}
+//
+//	//UE_LOG(LogTemp, Warning, TEXT("Auto Attack Timer Started!"));
+//	GetWorld()->GetTimerManager().SetTimer(
+//		AutoAttackTimerHandle,
+//		this,
+//		&AReibaiFightCharacter::TriggerAutoAttack,
+//		2.0f, // 2秒ごとに実行 (この間隔は後で調整可能)
+//		true  // 繰り返し
+//	);
+//}
 
 //タイマーで定期的に行われる処理
-void AReibaiFightCharacter::TriggerAutoAttack()
-{
-	//UE_LOG(LogTemp, Log, TEXT("Triggering All Auto Attacks..."));
-	// 所持している全ての自動攻撃コンポーネントの攻撃を実行
-	for (UAttackComponentBase* AttackComp : ActiveAttackComponents)
-	{
-		if (AttackComp)
-		{
-			AttackComp->PerformAttack();
-		}
-	}
-}
+//void AReibaiFightCharacter::TriggerAutoAttack()
+//{
+//	//UE_LOG(LogTemp, Log, TEXT("Triggering All Auto Attacks..."));
+//	// 所持している全ての自動攻撃コンポーネントの攻撃を実行
+//	for (UAttackComponentBase* AttackComp : ActiveAttackComponents)
+//	{
+//		if (AttackComp)
+//		{
+//			AttackComp->PerformAttack();
+//		}
+//	}
+//}
 
 void AReibaiFightCharacter::GainExperience(int32 XPAmount)
 {
@@ -365,13 +365,13 @@ void AReibaiFightCharacter::LevelUp()
 {
 	// レベルアップ処理
 	CurrentLevel++;
-	OnCurrentLevelUpdated(CurrentLevel); //レベルアップの通知。中身はBP
+	OnCurrentLevelUpdated(CurrentLevel); //HUDの現在のレベルの更新。中身はBP
 
 	// 余った経験値を次のレベルに持ち越す
 	CurrentXP -= XPToNextLevel;
 
-	// 次のレベルに必要な経験値を増やす（例：1.5倍にする）
-	XPToNextLevel = FMath::RoundToInt(XPToNextLevel * 1.5f);
+	// 次のレベルに必要な経験値を増やす。1,2倍にする
+	XPToNextLevel = FMath::RoundToInt(XPToNextLevel * 1.2f);
 
 	//ここで次のレベルまでの経験値の上限を決めてもいいかも
 
@@ -449,7 +449,6 @@ void AReibaiFightCharacter::ApplyUpgradeByID(FName UpgradeID)
 	{
 		//データが見つからなかった場合のエラー処理
 		UE_LOG(LogTemp, Error, TEXT("Could not find UpgradeData for ID: %s"), *UpgradeID.ToString());
-		// ... ゲームを再開する処理 ...
 		return;
 	}
 
