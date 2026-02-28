@@ -31,11 +31,14 @@ void UAutoShadowBallAttack::PerformAttack()
 		FVector PlayerLocation = PlayerCharacter->GetActorLocation();
 		FVector DirectionToEnemy = (EnemyLocation - PlayerLocation).GetSafeNormal();
 
-		FVector SpawnLocation = PlayerLocation + DirectionToEnemy * 200.0f; //取得した方向から200離れた場所にスポーン
+		FVector SpawnLocation = PlayerLocation + DirectionToEnemy * 150.0f; //取得した方向から200離れた場所にスポーン
 		FRotator SpawnRotation = DirectionToEnemy.Rotation(); // 方向ベクトルから回転を作成
 
 		if (ProjectileClass) {
-			AAttackProjectileBase* SpawnedBall = GetWorld()->SpawnActor<AAttackProjectileBase>(ProjectileClass, SpawnLocation, SpawnRotation);
+			FActorSpawnParameters SpawnParams;//アクタのスポーンに関するパラメータを引数とする場合はこの構造体を作成して渡す必要がある
+			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+			AAttackProjectileBase* SpawnedBall = GetWorld()->SpawnActor<AAttackProjectileBase>(ProjectileClass, SpawnLocation, SpawnRotation, SpawnParams);
 			if (SpawnedBall) {
 				// ホーミングのターゲットを設定
 				SpawnedBall->ShooterCharacter = OwnerCharacter;//誰が撃ったかに

@@ -62,15 +62,34 @@ void AAttackProjectileBase::Tick(float DeltaTime)
 // 敵や壁に当たった時の処理
 void AAttackProjectileBase::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
+	if (bHasHit) return; //すでに当たった後なら何もしない。これはSetLifeSpanでデストロイするため必要
+
     // 自分自身や、撃った人（ShooterCharacter）には当たらないようにする
     if (OtherActor && OtherActor != this && OtherActor != ShooterCharacter)
     {
         ABaseCharacter* HitCharacter = Cast<ABaseCharacter>(OtherActor);
         if (!HitCharacter) return;
 
+		bHasHit = true;
+
         //当たったら消えるもののためこのスコープで多重判定のチェック配列を作成
         TSet<AActor*> HitActors;
 		UE_LOG(LogTemp, Warning, TEXT("Projectile hit: %s"), *OtherActor->GetName());
+        if (ShooterCharacter)
+        {
+            UE_LOG(LogTemp, Warning, TEXT("ShooterCharacter is : %s"), *ShooterCharacter->GetName());
+        }
+        else
+        {
+            // 空っぽの場合はこっちのログを出してクラッシュを防ぐ
+            UE_LOG(LogTemp, Error, TEXT("ShooterCharacter is NULL!!!"));
+        }
+        //UE_LOG(LogTemp, Warning, TEXT("HitActors is : %s"), HitActors);
+        UE_LOG(LogTemp, Error, TEXT("Radius is : %f"),DamageRadius);
+        UE_LOG(LogTemp, Error, TEXT("DamageAmount is ; %f"),DamageAmount);
+
+
+
         UReibaiFightBFL::ApplyRadialDamage(
             ShooterCharacter,                 // 攻撃者
             GetActorLocation(),               // ダメージの中心点（弾の位置）
@@ -79,6 +98,6 @@ void AAttackProjectileBase::OnSphereOverlap(UPrimitiveComponent* OverlappedCompo
             HitActors                  // この攻撃でヒットしたアクターのリスト（今回は空でOK）
 		);
         // 当たったら自分（弾）は消滅する
-        Destroy();
+		SetLifeSpan(0.1f); // すぐ消えるようにする
     }
 }

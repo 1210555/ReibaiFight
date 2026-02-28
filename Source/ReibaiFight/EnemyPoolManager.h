@@ -35,5 +35,5 @@ public:
 	TArray<ABaseEnemy*> EnemyPool;
 
 	UFUNCTION(BlueprintCallable, Category = "Enemy Pool")
-	ABaseEnemy* SpawnEnemyFromPool(FVector SpawnLocation, FRotator SpawnRotation);
+	ABaseEnemy* SpawnEnemyFromPool(FVector GroundLocation, FRotator SpawnRotation);
 };

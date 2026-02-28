@@ -2,6 +2,7 @@
 
 
 #include "EnemyPoolManager.h"
+#include "Components/CapsuleComponent.h"
 #include "BaseEnemy.h"
 
 // Sets default values
@@ -43,13 +44,16 @@ void AEnemyPoolManager::BeginPlay()
 	}
 }
 
-ABaseEnemy* AEnemyPoolManager::SpawnEnemyFromPool(FVector SpawnLocation, FRotator SpawnRotation)
+//この関数よBPで呼び出して、敵をスポーンさせる。スポーンさせる場所と回転は引数で指定する。
+ABaseEnemy* AEnemyPoolManager::SpawnEnemyFromPool(FVector GroundLocation, FRotator SpawnRotation)
 {
 	for(ABaseEnemy* Enemy : EnemyPool)
 	{
 		// 敵が存在していて、かつ死んでいる（＝プールに戻っている）場合
 		if(Enemy && Enemy->IsDead())
 		{
+			float EnemyHeight = Enemy->GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
+			FVector SpawnLocation = GroundLocation + FVector(0, 0, EnemyHeight-10.0f);
 			Enemy->ActivateEnemy(SpawnLocation, SpawnRotation);
 			// ★後で ABaseEnemy に実装する「おやすみモード」から復帰させる関数を呼ぶ
 			/*Enemy->ActivateEnemy();*/

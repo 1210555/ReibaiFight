@@ -49,6 +49,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack")
 	float DamageRadius = 30.0f;
 
+	//何度もオーバーラップして繰り返しダメージを与えないようにするためのフラグ
+	bool bHasHit;
+
 protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")

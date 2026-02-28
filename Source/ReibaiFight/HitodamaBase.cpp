@@ -17,7 +17,7 @@ AHitodamaBase::AHitodamaBase()
 	PIDTrackingComponent = CreateDefaultSubobject<UPIDTrackingComponent>(TEXT("PIDController"));
 	RootComponent = PIDTrackingComponent;
 
-	// Niagaraコンポーネントを作成し、PIDコンポーネントにアタッチ（接続）
+	// Niagaraコンポーネントを作成し、PIDコンポーネントにアタッチ
 	NiagaraComponent = CreateDefaultSubobject<UNiagaraComponent>(TEXT("Effect"));
 	NiagaraComponent->SetupAttachment(RootComponent);
 }
@@ -55,18 +55,15 @@ void AHitodamaBase::Activate(USceneComponent* TargetToFollow)
 	//		{
 	//			SphereCollision->IgnoreActorWhenMoving(OwnerActor, true);
 	//		}
-
 	//		// 念のため、Instigatorもセットしておく
 	//		SetInstigator(Cast<APawn>(OwnerActor));
 	//	}
 	//}
-
 	////ひとだまを表示させる
 	////SetActorHiddenInGameをtrue,flaseにすることでひとだまをだしたり、隠したりする
 	////これがオブジェクトプーリング設計の核
 	//SetActorHiddenInGame(false);
 	//NiagaraComponent->Activate(); // エフェクトを再生
-
 	//// PIDコンポーネントに「追いかける相手」を教える
 	//if (PIDTrackingComponent)
 	//{
@@ -99,7 +96,7 @@ void AHitodamaBase::Deactivate()
 void AHitodamaBase::Upgrade(const FUpgradeData& UpgradeData)
 {
 
-	// 例: エフェクトの差し替え
+	//エフェクトの差し替え
 	if (UpgradeData.NewNiagaraEffect && NiagaraComponent)
 	{
 		NiagaraComponent->SetAsset(UpgradeData.NewNiagaraEffect);

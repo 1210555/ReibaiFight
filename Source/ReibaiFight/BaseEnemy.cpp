@@ -140,15 +140,14 @@ void ABaseEnemy::ConvertToAlly() {
     }
 }
 
+//死亡時にAIを停止させ、死亡アニメーション再生時に当たり判定を消すための関数
 void ABaseEnemy::DisableAIAndCoollision() {
     AAIController* AIController = Cast<AAIController>(GetController());
     UBrainComponent* BrainComp = AIController->GetBrainComponent();
     if (AIController && BrainComp)
     {
-        if (BrainComp) {
-            // AIの思考を停止させる
-            BrainComp->StopLogic("Dead");
-        }
+        // AIの思考を停止させる
+        BrainComp->StopLogic("Dead");
     }
     // 当たり判定を消して、他のキャラクターの邪魔にならないようにする
     GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);//当たり判定を無効化
@@ -318,6 +317,9 @@ void ABaseEnemy::ActivateEnemy(FVector SpawnLocation, FRotator SpawnRotation) {
 
     if (USkeletalMeshComponent* MeshComp = GetMesh())
     {
+        //アニメーションシステム全体をリセットする。
+        MeshComp->InitAnim(true);
+
         if (UAnimInstance* AnimInstance = MeshComp->GetAnimInstance())
         {
             // 再生中のモンタージュ（死亡アニメーション等）を0秒で強制停止する
@@ -335,7 +337,7 @@ void ABaseEnemy::ActivateEnemy(FVector SpawnLocation, FRotator SpawnRotation) {
     SetActorHiddenInGame(false);
     SetActorEnableCollision(true);
     SetActorTickEnabled(true);
-    //体力を最大に回復
+	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);//当たり判定を有効化
 
     
     if(GetCharacterMovement()) {

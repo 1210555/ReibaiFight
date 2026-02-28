@@ -23,6 +23,13 @@ protected:
 	// このコンポーネント専用のタイマーハンドル
 	FTimerHandle AttackTimerHandle;
 
+	// 連射数のタイマーハンドル
+	FTimerHandle BurstTimerHandle;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+	int BurstCount = 0; // 現在の連射数
+
+
 public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
