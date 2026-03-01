@@ -29,6 +29,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
 	int BurstCount = 0; // åªç›ÇÃòAéÀêî
 
+	UFUNCTION(BlueprintImplementableEvent, Category = "Audio")
+	void PlayAttackSound();
+
 
 public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;

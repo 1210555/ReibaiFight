@@ -91,7 +91,7 @@ void AReibaiFightCharacter::BeginPlay()
 
 	if (HitodamaClass)
 	{
-		// 例えば 10個 予備を作っておく
+		//3個予備を作っておく
 		int32 PoolSize = 3;
 
 		for (int32 i = 0; i < PoolSize; i++)
@@ -464,16 +464,23 @@ void AReibaiFightCharacter::ApplyUpgradeByID(FName UpgradeID)
 			//プールにまだ予備があるかを確認
 			if (HitodamaPool.IsValidIndex(ActiveHitodamaCount))
 			{
-				//プールから次の人魂を取り出して「起動」
-				HitodamaPool[ActiveHitodamaCount]->Activate(GetRootComponent());
-
-				//初期の配置角度を0度に設定
-				HitodamaPool[ActiveHitodamaCount]->SetOrbitAngle(0.0f); 
-
-				//ここでカウントを増やす
-				//１番目(ActiveHitodamaCountの初期値は１)はもう使ったから、次は２番目を使うという意味
 				ActiveHitodamaCount++;
+				UE_LOG(LogTemp, Warning, TEXT("Activating Hitodama #%d"), ActiveHitodamaCount);
 
+				if (ActiveHitodamaCount == 1) {
+					bIsAllHitodamaActive = true; // 最初のひとだまがアクティブになったらフラグを立てる
+					UE_LOG(LogTemp, Warning, TEXT("Starting All Hitodama Timer..."));
+					GetWorld()->GetTimerManager().SetTimer(
+						AllHitodamaTimerHandle,
+						this,
+						&AReibaiFightCharacter::ToggleAllHitodamas,
+						5.0f, // 2秒ごとに実行 (この間隔は後で調整可能)
+						true  // 繰り返し
+					);
+				}
+				//ひとつめの配置角度を0度に設定
+				HitodamaPool[0]->SetOrbitAngle(0.0f); 
+				HitodamaPool[0]->Activate(GetRootComponent()); // 最初のひとだまをアクティブにする
 			}
 		}
 		//設定されているかいないかのみのtrue,false
@@ -596,7 +603,7 @@ void AReibaiFightCharacter::ApplyUpgradeByID(FName UpgradeID)
 					if (HitodamaPool.IsValidIndex(i))
 					{
 						// 次の人魂を起動
-						HitodamaPool[i]->Activate(GetRootComponent());
+						//HitodamaPool[i]->StartHitodamaAttack(GetRootComponent());
 						// 出した瞬間にも強化を適用（Lv1の強さで出ないように）
 						HitodamaPool[i]->Upgrade(*UpgradeData);
 					}
@@ -608,7 +615,7 @@ void AReibaiFightCharacter::ApplyUpgradeByID(FName UpgradeID)
 					float AngleStep = 360.0f / ActiveHitodamaCount;
 					for (int32 i = 0; i < ActiveHitodamaCount; ++i)
 					{
-						if (HitodamaPool.IsValidIndex(ActiveHitodamaCount))
+						if (HitodamaPool.IsValidIndex(i))
 						{
 							float NewAngle = i * AngleStep;
 
@@ -674,3 +681,33 @@ void AReibaiFightCharacter::ApplyUpgradeByID(FName UpgradeID)
 //		}
 //	}
 //}
+
+void AReibaiFightCharacter::ToggleAllHitodamas()
+{
+	UE_LOG(LogTemp, Error, TEXT("ToggleHitodama Function CALLED!"));
+
+	bIsAllHitodamaActive = !bIsAllHitodamaActive; // フラグを反転
+
+	if (bIsAllHitodamaActive) {
+		for (int32 i = 0; i < ActiveHitodamaCount; ++i)
+		{
+			if (HitodamaPool.IsValidIndex(i))
+			{
+				float NewAngle = (360.0f / ActiveHitodamaCount) * i;
+				HitodamaPool[i]->SetOrbitAngle(NewAngle);
+				HitodamaPool[i]->Activate(GetRootComponent());
+			}
+		}
+	}
+	else {
+		// オフにする時は、全員を一斉に隠す！
+		for (int32 i = 0; i < ActiveHitodamaCount; ++i)
+		{
+			if (HitodamaPool.IsValidIndex(i))
+			{
+				HitodamaPool[i]->Deactivate();
+			}
+		}
+	}
+
+}

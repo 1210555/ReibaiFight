@@ -38,49 +38,50 @@ void AHitodamaBase::Tick(float DeltaTime)
 // 「起動」された時の処理
 void AHitodamaBase::Activate(USceneComponent* TargetToFollow)
 {
-	////ひとだまのTickを有効にする
-	//SetActorTickEnabled(true);
-	//UE_LOG(LogTemp, Error, TEXT("Hitodama Activate Function CALLED!"));
+	//ひとだまのTickを有効にする
+	SetActorTickEnabled(true);
+	UE_LOG(LogTemp, Error, TEXT("Hitodama Activate Function CALLED!"));
 
-	//// 衝突無視の設定
-	//// TargetToFollow（追従先）があるなら、その持ち主（プレイヤー）とは当たらないようにする
-	//if (TargetToFollow)
-	//{
-	//	AActor* OwnerActor = TargetToFollow->GetOwner(); // コンポーネントから持ち主のアクターを取得
-	//	if (OwnerActor)
-	//	{
-	//		// SphereCollisionが有効なら、持ち主アクターを無視リストに追加
-	//		//これがないとひとだま起動時にプレイヤーに当たりクラッシュの原因となる
-	//		if (SphereCollision)
-	//		{
-	//			SphereCollision->IgnoreActorWhenMoving(OwnerActor, true);
-	//		}
-	//		// 念のため、Instigatorもセットしておく
-	//		SetInstigator(Cast<APawn>(OwnerActor));
-	//	}
-	//}
-	////ひとだまを表示させる
-	////SetActorHiddenInGameをtrue,flaseにすることでひとだまをだしたり、隠したりする
-	////これがオブジェクトプーリング設計の核
-	//SetActorHiddenInGame(false);
-	//NiagaraComponent->Activate(); // エフェクトを再生
-	//// PIDコンポーネントに「追いかける相手」を教える
-	//if (PIDTrackingComponent)
-	//{
-	//	PIDTrackingComponent->ResetState(); // 内部状態をリセット
-	//	PIDTrackingComponent->SetTargetToFollow(TargetToFollow);
-	//	PIDTrackingComponent->Activate(); // PIDコンポーネントのTickも有効化
-	//	PIDTrackingComponent->SetComponentTickEnabled(true);
-	//	
-	//}
-	////アクター自身のTickも有効に戻す（コンストラクタで切ったので）
-	//SetActorTickEnabled(true);
+	// 衝突無視の設定
+	// TargetToFollow（追従先）があるなら、その持ち主（プレイヤー）とは当たらないようにする
+	if (TargetToFollow)
+	{
+		AActor* OwnerActor = TargetToFollow->GetOwner(); // コンポーネントから持ち主のアクターを取得
+		if (OwnerActor)
+		{
+			// SphereCollisionが有効なら、持ち主アクターを無視リストに追加
+			//これがないとひとだま起動時にプレイヤーに当たりクラッシュの原因となる
+			if (SphereCollision)
+			{
+				SphereCollision->IgnoreActorWhenMoving(OwnerActor, true);
+			}
+			// 念のため、Instigatorもセットしておく
+			SetInstigator(Cast<APawn>(OwnerActor));
+		}
+	}
+	//ひとだまを表示させる
+	//SetActorHiddenInGameをtrue,flaseにすることでひとだまをだしたり、隠したりする
+	//これがオブジェクトプーリング設計の核
+	SetActorHiddenInGame(false);
+	NiagaraComponent->Activate(); // エフェクトを再生
+	// PIDコンポーネントに「追いかける相手」を教える
+	if (PIDTrackingComponent)
+	{
+		PIDTrackingComponent->ResetState(); // 内部状態をリセット
+		PIDTrackingComponent->SetTargetToFollow(TargetToFollow);
+		PIDTrackingComponent->Activate(); // PIDコンポーネントのTickも有効化
+		PIDTrackingComponent->SetComponentTickEnabled(true);
+		
+	}
+	//アクター自身のTickも有効に戻す（コンストラクタで切ったので）
+	SetActorTickEnabled(true);
 
 }
 
 // 「停止（凍結）」された時の処理
 void AHitodamaBase::Deactivate()
 {
+	UE_LOG(LogTemp, Error, TEXT("Hitodama Deactivate Function CALLED!"));
 	//ひとだま消滅時はこれをtrueにして非表示にする
 	//存在が消えているわけではない。メモリ上には存在しており、再度Activateするときもヒープ領域を確保する必要はない
 	SetActorHiddenInGame(true);   
@@ -157,3 +158,32 @@ void AHitodamaBase::PerformHitodamaAttack() {
 			UE_LOG(LogTemp, Warning, TEXT("Hitodama Attack hit: %s for %f damage"), *HitActor->GetName(), BaseDamage);
 		}
 }
+
+////アップグレード取得時に一度だけ呼び出すスイッチのような関数。
+//void AHitodamaBase::StartHitodamaAttack(USceneComponent* TargetToFollow)
+//{
+//	UE_LOG(LogTemp, Error, TEXT("StartHitodamaAttack Function CALLED!"));
+//	this->SavedTarget = TargetToFollow;
+//	bIsActive = true;
+//	Activate(SavedTarget); //アップグレード取得時に起動も行う
+//
+//	GetWorld()->GetTimerManager().SetTimer(
+//		HitodamaTimerHandle,
+//		this,
+//		&AHitodamaBase::ToggleHitodama,
+//		5.0f,
+//		true // ループする
+//	);
+//}
+//
+//void AHitodamaBase::ToggleHitodama() {
+//	UE_LOG(LogTemp, Error, TEXT("ToggleHitodama Function CALLED!"));
+//	if (bIsActive) {
+//		Deactivate();
+//		bIsActive = false;
+//	}
+//	else {
+//		Activate(SavedTarget); // ターゲットなしで起動
+//		bIsActive = true;
+//	}
+//}

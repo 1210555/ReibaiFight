@@ -32,6 +32,12 @@ protected:
 
 	float BaseDamage = 20.0f;
 
+	//FTimerHandle HitodamaTimerHandle;
+
+	//bool bIsActive = false; // ひとだまが現在起動しているかどうかを追跡するフラグ
+	//
+	//UPROPERTY()
+	//USceneComponent* SavedTarget;//現在のターゲットを保存する変数
 
 public:	
 	// Called every frame
@@ -60,6 +66,10 @@ public:
 	//ダメージを与える関数
 	UFUNCTION(BlueprintCallable, Category="Attack")
 	void PerformHitodamaAttack();
+
+	//void StartHitodamaAttack(USceneComponent* TargetToFollow);
+
+	//void ToggleHitodama();
 
 	//ひとだま攻撃の当たり判定の半径
 	//見た目よりも少し大きくしておく

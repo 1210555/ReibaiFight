@@ -221,5 +221,11 @@ public:
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
 
 	int32 AllyChance;
+
+	FTimerHandle AllHitodamaTimerHandle;
+
+	bool bIsAllHitodamaActive = false;
+
+	void ToggleAllHitodamas();
 };
 
