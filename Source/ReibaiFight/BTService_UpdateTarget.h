@@ -15,7 +15,7 @@ class REIBAIFIGHT_API UBTService_UpdateTarget : public UBTService
 	GENERATED_BODY()
 	
 private:
-	float SerachRadius = 2000.0f;
+	float SerachRadius = 15000.0f;
 
 protected:
 	void TickNode(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds) override;

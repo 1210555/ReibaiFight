@@ -123,7 +123,6 @@ void UThunderAttack::FireSingleThunder()
 				);
 			}
 
-
 			//今回の攻撃でヒットした敵を記録するための、空のリストを作る
 			TSet<AActor*> HitActorsInThisAttack;
 
@@ -135,6 +134,7 @@ void UThunderAttack::FireSingleThunder()
 				BaseDamage,                     // ダメージ量
 				HitActorsInThisAttack           // この攻撃でヒットしたアクターのリスト
 			);
+			PlayAttackSound(); // 攻撃音を再生する関数
 		}
 		CurrentBurstCount--; // 連射数を減らす
 	}

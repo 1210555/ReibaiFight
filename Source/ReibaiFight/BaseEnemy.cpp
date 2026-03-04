@@ -100,6 +100,8 @@ bool ABaseEnemy::TryConvertToAlly()
         if (ReibaiFightCharacter) {
             //敵を仲間にするチャンスがあるかチェック
             if (ReibaiFightCharacter->AllyChance > 0) {
+                float ParameterMultiplier = ReibaiFightCharacter->AllyDamageMultiplier;
+				AllyEnemyUpgrade(ParameterMultiplier);
                 ConvertToAlly();
                 ReibaiFightCharacter->AllyChance--;
 
@@ -370,4 +372,10 @@ void ABaseEnemy::DeactivateEnemy() {
 
 bool ABaseEnemy::IsDead() const {
     return bIsDead;
+}
+
+void ABaseEnemy::AllyEnemyUpgrade(float ParameterMultiplier) {
+	UE_LOG(LogTemp, Warning, TEXT("AllyEnemyUpgrade called with multiplier: %f"), ParameterMultiplier);
+	MaxHealth *= ParameterMultiplier;
+	OverlapEnemyDamage *= ParameterMultiplier;
 }

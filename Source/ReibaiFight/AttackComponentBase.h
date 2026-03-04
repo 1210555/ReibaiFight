@@ -29,6 +29,7 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
 	int BurstCount = 0; // 現在の連射数
 
+	//サウンドの再生。各攻撃コンポーネントのBPで実装する
 	UFUNCTION(BlueprintImplementableEvent, Category = "Audio")
 	void PlayAttackSound();
 

@@ -131,4 +131,7 @@ public:
 
 	//bool型の関数で、敵が死んでいるかを返す。constをつけることで呼び出し先(EnemyPoolManager)で結果を書き換えないことを明記する
 	bool IsDead() const;
+
+	//Ally時の敵の強化を行う関数。AllyChanceが増えたとき、すなわちアップグレードを取得したときプレイヤークラスで呼び出す。
+	void AllyEnemyUpgrade(float ParameterMultiplier);
 };

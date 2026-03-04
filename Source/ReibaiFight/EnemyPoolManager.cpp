@@ -24,12 +24,15 @@ void AEnemyPoolManager::BeginPlay()
 		UE_LOG(LogTemp, Warning, TEXT("EnemyClass is not set in EnemyPoolManager!"));
 		return;
 	}
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;//何かとオーバーラップしててもスポーンさせるためのパラメータ。これを引数としてSpawnActorする
+	FVector SpawnLocation = FVector(0,0,-10000.0f);
 
 	//指定された数だけ敵をスポーンして、プールに追加する。
 	for(int32 i=0; i < PoolSize; i++)
 	{
 		//とりあえずスポーンさせて、これを以下でDeactivateする。
-		ABaseEnemy* NewEnemy = GetWorld()->SpawnActor<ABaseEnemy>(EnemyClass, FVector::ZeroVector, FRotator::ZeroRotator);
+		ABaseEnemy* NewEnemy = GetWorld()->SpawnActor<ABaseEnemy>(EnemyClass, SpawnLocation, FRotator::ZeroRotator, SpawnParams);
 		
 		if (NewEnemy) {
 			//スポーンしたものを非アクティブにする。これでプールに入れる。

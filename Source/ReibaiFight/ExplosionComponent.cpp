@@ -51,6 +51,7 @@ void UExplosionComponent::PerformAttack()
 			BaseDamage,                     // ダメージ量
 			HitActorsInThisAttack           // この攻撃でヒットしたアクターのリスト
 		);
+		PlayAttackSound(); // 攻撃音を再生
 	}
 }
 

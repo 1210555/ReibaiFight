@@ -16,6 +16,15 @@ class UInputMappingContext;
 class UInputAction;
 struct FInputActionValue;
 
+UENUM(BlueprintType)
+enum class EPlayerSoundType : uint8
+{
+	Punch UMETA(DisplayName = "Punch"),
+	Heal UMETA(DisplayName = "Heal"),
+	Speedup UMETA(DisplayName = "Speedup"),
+	TakeDamage UMETA(DisplayName = "TakeDamage")
+};
+
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
 
 UCLASS(config=Game)
@@ -56,6 +65,8 @@ class AReibaiFightCharacter : public ABaseCharacter
 
 public:
 	AReibaiFightCharacter();
+
+	void Tick(float DeltaTime) override;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
 	float MaxSpiritPower = 100.0f;
@@ -133,9 +144,9 @@ protected:
 	UFUNCTION(BlueprintImplementableEvent, Category = "LevelUp")
 	void OnUpgradeAcquired(const FUpgradeData& AcquiredUpgrade);
 
-	////UIに表示する経験値、GainExperience関数でCurrentXPと同じ値に更新され、LevelUpで-=XPToNextLevelupとなる。CurrentXPは加算されて行ってしまうため
-	//UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "LevelUp")
-	//int32 UIExperienceDisplay = 0;
+	UFUNCTION(BlueprintImplementableEvent, Category = "Audio")
+	void PlayPlayerSound(EPlayerSoundType SoundType);
+
 
 protected:
 	// APawn interface
@@ -226,6 +237,10 @@ public:
 
 	bool bIsAllHitodamaActive = false;
 
+	// タイマーで呼び出される関数、ひとだまのオンオフを切り替える
 	void ToggleAllHitodamas();
+
+	//Ally時の敵はこの変数を参照して体力、攻撃力などを決める
+	float AllyDamageMultiplier = 1.0f;
 };
 

@@ -49,24 +49,10 @@ void UAutoShadowBallAttack::PerformAttack()
 					SpawnedBall->ProjectileMovement->HomingTargetComponent = TargetEnemy->GetRootComponent(); // ホーミングのターゲットを設定
 					UE_LOG(LogTemp, Warning, TEXT("Homing target set to %s"), *TargetEnemy->GetName());
 				}
-				else {
-					UE_LOG(LogTemp, Warning, TEXT("ProjectileMovement component not found on spawned ball!"));
-				}
+				PlayAttackSound(); // 攻撃音を再生
 			}
-			else {
-				UE_LOG(LogTemp, Warning, TEXT("Failed to spawn Shadow Ball!"));
-			}
-			
-		}
-		else {
-			UE_LOG(LogTemp, Warning, TEXT("ProjectileClass not set for AutoShadowBallAttack!"));
 		}
 	}
-	else {
-		UE_LOG(LogTemp, Warning, TEXT("No target found for AutoShadowBallAttack!"));
-	}
-
-	UE_LOG(LogTemp, Warning, TEXT("AutoShadowBallAttack performed!"));
 }
 
 void UAutoShadowBallAttack::Upgrade(const FUpgradeData& UpgradeData)

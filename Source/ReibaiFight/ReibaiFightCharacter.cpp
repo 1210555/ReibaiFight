@@ -65,6 +65,14 @@ AReibaiFightCharacter::AReibaiFightCharacter()
 	// are set in the derived blueprint asset named ThirdPersonCharacter (to avoid direct content references in C++)
 }
 
+void AReibaiFightCharacter::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+	// ここに毎フレーム更新したい処理を追加できます
+	UE_LOG(LogTemp, Warning, TEXT("Player MaxHealth: %f"), MaxHealth);
+	UE_LOG(LogTemp, Warning, TEXT("Player CurrentHealth: %f"), CurrentHealth);
+}
+
 void AReibaiFightCharacter::BeginPlay()
 {
 	// Call the base class  
@@ -249,6 +257,8 @@ void AReibaiFightCharacter::AttackHitCheck(float DamageAmount)
 	const FVector HitOrigin = GetMesh()->GetSocketLocation("Fist_R_Socket");
 	const float HitRadius = 80.0f; // この攻撃の半径
 
+	int32 PreviousHitCount = HitActors.Num(); //攻撃前のヒット数を保存
+
 	// --- BFLの関数を呼び出す ---
 	// HitActors は .h で定義した TSet<AActor*> 型のメンバー変数
 	UReibaiFightBFL::ApplyRadialDamage(
@@ -259,17 +269,18 @@ void AReibaiFightCharacter::AttackHitCheck(float DamageAmount)
 		HitActors    // この攻撃でヒット済みのリスト
 	);
 
-	// デバッグ用に当たり判定の球を視覚化
-	//DrawDebugSphere(GetWorld(), HitOrigin, HitRadius, 12, FColor::Red, false, 2.0f);
+	//今のヒット数が、処理前より増えていれば「新しくヒットした」と判定
+	if (HitActors.Num() > PreviousHitCount)
+	{
+		PlayPlayerSound(EPlayerSoundType::Punch); // ヒットサウンドを再生
+	}
 }
 
 float AReibaiFightCharacter::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
-
-	//まず親クラスのTakeDamageを呼び出して、最終的なダメージ量を計算してもらう (重要！)
+	//まず親クラスのTakeDamageを呼び出して、最終的なダメージ量を計算してもらう
 	float DamageApplied = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 	
-
 	if (DamageApplied > 0.f) {
 
 		OnHealthUpdated(CurrentHealth, MaxHealth);
@@ -283,6 +294,7 @@ float AReibaiFightCharacter::TakeDamage(float DamageAmount, FDamageEvent const& 
 		else
 		{
 			//プレイヤーの被ダメージリアクション (画面の点滅、サウンド再生など)をいれる
+			PlayPlayerSound(EPlayerSoundType::TakeDamage); // ヒットサウンドを再生する関数
 		}
 	}
 	return DamageApplied; // 実際に適用されたダメージ量を返す
@@ -290,7 +302,6 @@ float AReibaiFightCharacter::TakeDamage(float DamageAmount, FDamageEvent const& 
 
 void AReibaiFightCharacter::Die()
 {
-
 	APlayerController* PlayerController = GetController<APlayerController>();
 
 	// UIが存在するかチェック
@@ -308,44 +319,11 @@ void AReibaiFightCharacter::Die()
 			GameOverWidget->AddToViewport();
 		}
 	}
-
 	// キャラクターの当たり判定と動きを停止
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	GetCharacterMovement()->DisableMovement();
 	DisableInput(PlayerController); // プレイヤーの入力を無効化
 }
-
-//void AReibaiFightCharacter::StartAutoAttackTimer()
-//{
-//	// 既にタイマーが動いている場合は何もしない
-//	if (GetWorld()->GetTimerManager().IsTimerActive(AutoAttackTimerHandle))
-//	{
-//		return;
-//	}
-//
-//	//UE_LOG(LogTemp, Warning, TEXT("Auto Attack Timer Started!"));
-//	GetWorld()->GetTimerManager().SetTimer(
-//		AutoAttackTimerHandle,
-//		this,
-//		&AReibaiFightCharacter::TriggerAutoAttack,
-//		2.0f, // 2秒ごとに実行 (この間隔は後で調整可能)
-//		true  // 繰り返し
-//	);
-//}
-
-//タイマーで定期的に行われる処理
-//void AReibaiFightCharacter::TriggerAutoAttack()
-//{
-//	//UE_LOG(LogTemp, Log, TEXT("Triggering All Auto Attacks..."));
-//	// 所持している全ての自動攻撃コンポーネントの攻撃を実行
-//	for (UAttackComponentBase* AttackComp : ActiveAttackComponents)
-//	{
-//		if (AttackComp)
-//		{
-//			AttackComp->PerformAttack();
-//		}
-//	}
-//}
 
 void AReibaiFightCharacter::GainExperience(int32 XPAmount)
 {
@@ -526,19 +504,23 @@ void AReibaiFightCharacter::ApplyUpgradeByID(FName UpgradeID)
 			{
 				CurrentHealth = FMath::Min(CurrentHealth + Value, MaxHealth);
 				OnHealthUpdated(CurrentHealth, MaxHealth); // UIに通知
+				PlayPlayerSound(EPlayerSoundType::Heal); // 回復音を再生する関数
 			}
 			else if (StatName == "FullHeal")
 			{
 				CurrentHealth = MaxHealth;
 				OnHealthUpdated(CurrentHealth, MaxHealth); // UIに通知
+				PlayPlayerSound(EPlayerSoundType::Heal); // 回復音を再生する関数
 			}
 			else if (StatName == "MovementSpeed")
 			{
 				GetCharacterMovement()->MaxWalkSpeed += Value;
+				PlayPlayerSound(EPlayerSoundType::Speedup); //速度上昇時のサウンドを再生する関数
 			}
 			else if (StatName == "AllyAttackChance")
 			{
 				AllyChance += Value;
+				AllyDamageMultiplier += 1.0f; // 呼ばれるたびに倍率が2倍、3倍と上がっていく
 			}
 		}
 		break;
